@@ -1,51 +1,33 @@
+import Image from "next/image";
 import Link from "next/link";
-import { GameCard } from "@/components/game-card";
-import { getAllCategories, getFeaturedGames } from "@/lib/games";
+import { getAllGames } from "@/lib/games";
 
 export default function Home() {
-  const featuredGames = getFeaturedGames();
-  const categories = getAllCategories();
+  const games = getAllGames();
 
   return (
     <main>
-      <section className="card overflow-hidden px-6 py-10 sm:px-10">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">Launch-ready Starter</p>
-        <h1 className="mt-3 max-w-2xl text-4xl font-bold leading-tight text-slate-900 sm:text-5xl">
-          Build your Poki-style portal for open-source web games.
-        </h1>
-        <p className="mt-4 max-w-2xl text-slate-700">
-          Catalog games, add metadata and licensing, and embed HTML5 titles on fast SEO-friendly pages.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Link href="/games" className="btn btn-primary">
-            Explore catalog
-          </Link>
-          <Link href="/admin" className="btn btn-secondary">
-            Add a game
-          </Link>
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-slate-900">Featured Games</h2>
-          <Link href="/games" className="text-sm font-semibold text-blue-700 hover:text-blue-900">
-            See all
-          </Link>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {featuredGames.map((game) => (
-            <GameCard key={game.slug} game={game} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-8 card p-6">
-        <h2 className="text-xl font-semibold text-slate-900">Popular Categories</h2>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <Link key={category} href={`/games?category=${encodeURIComponent(category)}`} className="chip">
-              {category}
+      <section>
+        <div className="columns-4 gap-3 sm:columns-6 lg:columns-8">
+          {games.map((game) => (
+            <Link
+              key={game.slug}
+              href={`/play/${game.slug}`}
+              className="group relative mb-3 block break-inside-avoid overflow-hidden rounded-lg border border-slate-800 bg-slate-900 shadow-lg shadow-black/30 transition duration-200 hover:shadow-2xl hover:shadow-black/50"
+            >
+              <Image
+                src={game.coverImage}
+                alt={game.title}
+                width={800}
+                height={1000}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="h-auto w-full object-contain object-center"
+                priority={game.slug === "diablo-js"}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 transition group-hover:opacity-100" />
+              <div className="absolute inset-x-0 bottom-0 translate-y-4 px-3 pb-3 text-base font-semibold text-white opacity-0 transition duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+                {game.title}
+              </div>
             </Link>
           ))}
         </div>

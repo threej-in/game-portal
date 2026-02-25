@@ -1,6 +1,7 @@
 export type Game = {
   slug: string;
   title: string;
+  coverImage: string;
   shortDescription: string;
   description: string;
   categories: string[];
@@ -15,8 +16,25 @@ export type Game = {
 
 const games: Game[] = [
   {
+    slug: "diablo-js",
+    title: "Diablo JS",
+    coverImage: "/covers/diablo-js.svg",
+    shortDescription: "Isometric action RPG built in HTML5 canvas and JavaScript.",
+    description:
+      "Open-source Diablo-inspired browser game with classic click-to-move combat and dungeon atmosphere. Best experienced on desktop with keyboard and mouse.",
+    categories: ["Action", "RPG"],
+    tags: ["Isometric", "Hack and Slash", "Classic"],
+    featured: false,
+    mobile: false,
+    license: "MIT",
+    sourceUrl: "https://github.com/mitallast/diablo-js",
+    attribution: "mitallast and contributors",
+    embedUrl: "/games/diablo-js/index.html",
+  },
+  {
     slug: "hextris",
     title: "Hextris",
+    coverImage: "/covers/hextris.svg",
     shortDescription: "Fast-paced hexagon puzzle game inspired by Tetris.",
     description:
       "Rotate the hexagon to catch falling blocks and clear sides before they overflow. Great for quick sessions and high-score loops.",
@@ -27,11 +45,12 @@ const games: Game[] = [
     license: "MIT",
     sourceUrl: "https://github.com/Hextris/hextris",
     attribution: "Hextris contributors",
-    embedUrl: "https://hextris.github.io/hextris/",
+    embedUrl: "/games/hextris/index.html",
   },
   {
     slug: "2048",
     title: "2048",
+    coverImage: "/covers/2048.svg",
     shortDescription: "Merge tiles until you hit 2048 and beyond.",
     description:
       "Slide numbered tiles across a 4x4 board to combine values strategically. Easy to learn, hard to master.",
@@ -42,11 +61,12 @@ const games: Game[] = [
     license: "MIT",
     sourceUrl: "https://github.com/gabrielecirulli/2048",
     attribution: "Gabriele Cirulli and contributors",
-    embedUrl: "https://play2048.co/",
+    embedUrl: "/games/2048/index.html",
   },
   {
     slug: "tower-building",
     title: "Tower Building",
+    coverImage: "/covers/tower-building.svg",
     shortDescription: "Stack moving blocks to build the tallest tower.",
     description:
       "A timing-based one-button game where each perfect placement keeps your tower stable and growing.",
@@ -54,14 +74,15 @@ const games: Game[] = [
     tags: ["Timing", "One Button", "Score Attack"],
     featured: false,
     mobile: true,
-    license: "Open Source Demo",
-    sourceUrl: "https://github.com/cocos-creator/example-projects",
-    attribution: "Community demo content",
-    embedUrl: "https://games.construct.net/351/latest",
+    license: "MIT",
+    sourceUrl: "https://github.com/your-org/game-portal",
+    attribution: "Arcadia Portal local game",
+    embedUrl: "/games/tower-building/index.html",
   },
   {
     slug: "space-shooter",
     title: "Space Shooter",
+    coverImage: "/covers/space-shooter.svg",
     shortDescription: "Classic wave survival shooter in your browser.",
     description:
       "Dodge enemy fire, collect upgrades, and survive escalating waves in a retro-style top-down shooter.",
@@ -69,10 +90,10 @@ const games: Game[] = [
     tags: ["Space", "Waves", "Retro"],
     featured: false,
     mobile: false,
-    license: "Open Source Demo",
-    sourceUrl: "https://github.com/photonstorm/phaser-examples",
-    attribution: "Phaser examples community",
-    embedUrl: "https://phaser.io/examples/v3.85.0/games/invaders/view/invaders",
+    license: "MIT",
+    sourceUrl: "https://github.com/your-org/game-portal",
+    attribution: "Arcadia Portal local game",
+    embedUrl: "/games/space-shooter/index.html",
   },
 ];
 

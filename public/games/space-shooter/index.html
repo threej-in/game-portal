@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Space Shooter</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #020617; overflow: hidden; }
+      canvas { display: block; width: 100vw; height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <script>
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      let w = 0, h = 0;
+      let keys = {};
+      let player, bullets, enemies, score, over;
+
+      function reset() {
+        player = { x: w / 2, y: h - 80, r: 16, speed: 6 };
+        bullets = [];
+        enemies = [];
+        score = 0;
+        over = false;
+      }
+
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+        reset();
+      }
+
+      function spawnEnemy() {
+        enemies.push({
+          x: Math.random() * (w - 50) + 25,
+          y: -20,
+          r: 14,
+          speed: 1.5 + Math.random() * 1.7 + score * 0.015
+        });
+      }
+
+      function shoot() {
+        bullets.push({ x: player.x, y: player.y - 20, r: 4, speed: 10 });
+      }
+
+      window.addEventListener("keydown", (e) => {
+        keys[e.code] = true;
+        if (e.code === "Space") {
+          e.preventDefault();
+          if (over) reset();
+          else shoot();
+        }
+      });
+      window.addEventListener("keyup", (e) => { keys[e.code] = false; });
+      window.addEventListener("pointerdown", () => (over ? reset() : shoot()));
+      window.addEventListener("resize", resize);
+      resize();
+
+      let tick = 0;
+      function loop() {
+        tick++;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = "#020617";
+        ctx.fillRect(0, 0, w, h);
+
+        if (!over) {
+          if (keys["ArrowLeft"] || keys["KeyA"]) player.x -= player.speed;
+          if (keys["ArrowRight"] || keys["KeyD"]) player.x += player.speed;
+          player.x = Math.max(player.r, Math.min(w - player.r, player.x));
+          if (tick % Math.max(12, 48 - Math.floor(score / 2)) === 0) spawnEnemy();
+        }
+
+        bullets.forEach((b) => b.y -= b.speed);
+        bullets = bullets.filter((b) => b.y > -10);
+
+        enemies.forEach((e) => e.y += e.speed);
+        enemies = enemies.filter((e) => e.y < h + 30);
+
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          const dxp = e.x - player.x;
+          const dyp = e.y - player.y;
+          if (Math.hypot(dxp, dyp) < e.r + player.r) over = true;
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            const b = bullets[j];
+            const dx = e.x - b.x;
+            const dy = e.y - b.y;
+            if (Math.hypot(dx, dy) < e.r + b.r) {
+              enemies.splice(i, 1);
+              bullets.splice(j, 1);
+              score++;
+              break;
+            }
+          }
+        }
+
+        ctx.fillStyle = "#38bdf8";
+        ctx.beginPath();
+        ctx.moveTo(player.x, player.y - 20);
+        ctx.lineTo(player.x - 16, player.y + 16);
+        ctx.lineTo(player.x + 16, player.y + 16);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#f59e0b";
+        bullets.forEach((b) => {
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.fillStyle = "#ef4444";
+        enemies.forEach((e) => {
+          ctx.beginPath();
+          ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "bold 28px sans-serif";
+        ctx.fillText(`Score: ${score}`, 24, 44);
+        ctx.font = "16px sans-serif";
+        ctx.fillText("Move: Arrow / A-D, Shoot: Space / Tap", 24, 68);
+
+        if (over) {
+          ctx.fillStyle = "rgba(0,0,0,0.45)";
+          ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 44px sans-serif";
+          ctx.fillText("Game Over", w / 2 - 130, h / 2 - 10);
+          ctx.font = "20px sans-serif";
+          ctx.fillText("Tap or press Space to restart", w / 2 - 140, h / 2 + 26);
+        }
+        requestAnimationFrame(loop);
+      }
+      loop();
+    </script>
+    <script>
+      (function () {
+        var links = document.querySelectorAll("a[href]");
+        links.forEach(function (a) {
+          var href = a.getAttribute("href");
+          if (!href) return;
+          try {
+            var u = new URL(href, window.location.href);
+            if ((u.protocol === "http:" || u.protocol === "https:") && u.origin !== window.location.origin) {
+              a.setAttribute("target", "_blank");
+              a.setAttribute("rel", "noopener noreferrer");
+            }
+          } catch (e) {}
+        });
+      })();
+    </script>
+  </body>
+</html>

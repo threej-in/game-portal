@@ -15,8 +15,8 @@ export function GameCard({ game }: GameCardProps) {
           </span>
         ))}
       </div>
-      <h3 className="text-xl font-semibold text-slate-900">{game.title}</h3>
-      <p className="mt-2 text-sm text-slate-600">{game.shortDescription}</p>
+      <h3 className="text-xl font-semibold text-slate-100">{game.title}</h3>
+      <p className="mt-2 text-sm text-slate-400">{game.shortDescription}</p>
       <div className="mt-4 flex items-center gap-2">
         <Link className="btn btn-primary" href={`/play/${game.slug}`}>
           Play

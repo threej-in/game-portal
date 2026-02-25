@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tower Building</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0b1022; overflow: hidden; }
+      canvas { display: block; width: 100vw; height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <script>
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      let w = 0;
+      let h = 0;
+      const stack = [];
+      let score = 0;
+      let moving = { x: 0, y: 0, width: 180, height: 30, dir: 1, speed: 4, color: "#60a5fa" };
+      let gameOver = false;
+
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+        if (stack.length === 0) init();
+      }
+
+      function init() {
+        stack.length = 0;
+        score = 0;
+        gameOver = false;
+        stack.push({ x: (w - 220) / 2, y: h - 80, width: 220, height: 30, color: "#22c55e" });
+        moving = { x: 0, y: h - 120, width: 180, height: 30, dir: 1, speed: 4, color: "#60a5fa" };
+      }
+
+      function placeBlock() {
+        if (gameOver) return;
+        const last = stack[stack.length - 1];
+        const overlapX = Math.max(moving.x, last.x);
+        const overlapW = Math.min(moving.x + moving.width, last.x + last.width) - overlapX;
+        if (overlapW <= 0) {
+          gameOver = true;
+          return;
+        }
+        const next = {
+          x: overlapX,
+          y: moving.y,
+          width: overlapW,
+          height: moving.height,
+          color: `hsl(${(score * 28) % 360} 80% 60%)`,
+        };
+        stack.push(next);
+        score++;
+        for (let i = 0; i < stack.length; i++) stack[i].y += 30;
+        moving = {
+          x: moving.dir > 0 ? 0 : w - next.width,
+          y: next.y - 30,
+          width: next.width,
+          height: 30,
+          dir: -moving.dir,
+          speed: Math.min(9, moving.speed + 0.2),
+          color: `hsl(${(score * 28 + 40) % 360} 80% 60%)`,
+        };
+      }
+
+      window.addEventListener("keydown", (e) => {
+        if (e.code === "Space") {
+          e.preventDefault();
+          if (gameOver) init();
+          else placeBlock();
+        }
+      });
+      window.addEventListener("pointerdown", () => (gameOver ? init() : placeBlock()));
+      window.addEventListener("resize", resize);
+      resize();
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(0, 0, w, h);
+
+        if (!gameOver) {
+          moving.x += moving.speed * moving.dir;
+          if (moving.x <= 0 || moving.x + moving.width >= w) moving.dir *= -1;
+        }
+
+        for (const b of stack) {
+          if (b.y > -40 && b.y < h + 40) {
+            ctx.fillStyle = b.color;
+            ctx.fillRect(b.x, b.y, b.width, b.height);
+          }
+        }
+        ctx.fillStyle = moving.color;
+        ctx.fillRect(moving.x, moving.y, moving.width, moving.height);
+
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "bold 28px sans-serif";
+        ctx.fillText(`Score: ${score}`, 24, 44);
+        ctx.font = "16px sans-serif";
+        ctx.fillText("Tap / Click / Space to place", 24, 68);
+
+        if (gameOver) {
+          ctx.fillStyle = "rgba(0,0,0,0.45)";
+          ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 44px sans-serif";
+          ctx.fillText("Game Over", w / 2 - 130, h / 2 - 10);
+          ctx.font = "20px sans-serif";
+          ctx.fillText("Tap or press Space to restart", w / 2 - 140, h / 2 + 26);
+        }
+        requestAnimationFrame(draw);
+      }
+      draw();
+    </script>
+    <script>
+      (function () {
+        var links = document.querySelectorAll("a[href]");
+        links.forEach(function (a) {
+          var href = a.getAttribute("href");
+          if (!href) return;
+          try {
+            var u = new URL(href, window.location.href);
+            if ((u.protocol === "http:" || u.protocol === "https:") && u.origin !== window.location.origin) {
+              a.setAttribute("target", "_blank");
+              a.setAttribute("rel", "noopener noreferrer");
+            }
+          } catch (e) {}
+        });
+      })();
+    </script>
+  </body>
+</html>

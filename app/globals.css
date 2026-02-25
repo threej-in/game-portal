@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f4f7ff;
-  --surface: #ffffff;
-  --ink: #111827;
-  --muted: #4b5563;
-  --primary: #1d4ed8;
-  --accent: #0f766e;
+  --bg: #070b14;
+  --surface: #0f172a;
+  --ink: #e5e7eb;
+  --muted: #9ca3af;
+  --primary: #2563eb;
+  --accent: #22d3ee;
 }
 
 @theme inline {
@@ -17,17 +17,16 @@
 
 body {
   background:
-    radial-gradient(circle at 10% 10%, #dbeafe 0, transparent 30%),
-    radial-gradient(circle at 90% 0, #ccfbf1 0, transparent 25%),
-    var(--bg);
+    radial-gradient(circle at 10% 10%, #172554 0, transparent 30%),
+    radial-gradient(circle at 90% 0, #083344 0, transparent 25%), var(--bg);
   color: var(--ink);
   min-height: 100vh;
+  padding: 10px;
 }
 
 main {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem 1rem 3rem;
+  width: 100%;
+  padding: 0;
 }
 
 a {
@@ -36,13 +35,13 @@ a {
 
 .card {
   background: var(--surface);
-  border: 1px solid #dbe3f6;
+  border: 1px solid #1e293b;
   border-radius: 1rem;
-  box-shadow: 0 10px 30px rgba(29, 78, 216, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .chip {
-  border: 1px solid #dbe3f6;
+  border: 1px solid #334155;
   border-radius: 999px;
   padding: 0.35rem 0.8rem;
   font-size: 0.85rem;
@@ -69,11 +68,11 @@ a {
 }
 
 .btn-secondary {
-  border: 1px solid #bfd0fb;
-  color: #1e3a8a;
-  background: #eff6ff;
+  border: 1px solid #334155;
+  color: #dbeafe;
+  background: #1e293b;
 }
 
 .btn-secondary:hover {
-  background: #dbeafe;
+  background: #334155;
 }

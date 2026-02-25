@@ -30,8 +30,8 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
             </span>
           ))}
         </div>
-        <h1 className="mt-4 text-3xl font-bold text-slate-900">{game.title}</h1>
-        <p className="mt-3 max-w-3xl text-slate-700">{game.description}</p>
+        <h1 className="mt-4 text-3xl font-bold text-slate-100">{game.title}</h1>
+        <p className="mt-3 max-w-3xl text-slate-300">{game.description}</p>
         <div className="mt-5 flex flex-wrap gap-2">
           {game.tags.map((tag) => (
             <span key={tag} className="chip">
@@ -50,8 +50,8 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
       </article>
 
       <section className="mt-6 card p-6">
-        <h2 className="text-xl font-semibold text-slate-900">License and Attribution</h2>
-        <dl className="mt-3 grid gap-3 text-sm text-slate-700">
+        <h2 className="text-xl font-semibold text-slate-100">License and Attribution</h2>
+        <dl className="mt-3 grid gap-3 text-sm text-slate-300">
           <div>
             <dt className="font-semibold">License</dt>
             <dd>{game.license}</dd>
@@ -63,7 +63,7 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
           <div>
             <dt className="font-semibold">Source</dt>
             <dd>
-              <a className="text-blue-700 hover:text-blue-900" href={game.sourceUrl} target="_blank" rel="noreferrer">
+              <a className="text-blue-400 hover:text-blue-300" href={game.sourceUrl} target="_blank" rel="noreferrer">
                 {game.sourceUrl}
               </a>
             </dd>
