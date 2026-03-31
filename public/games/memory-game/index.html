@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Superhero Memory Game</title>
+    <link rel="stylesheet" href="styles/style.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="hero">
+        <div>
+          <h1>Superhero Memory Game</h1>
+          <p class="subtitle">Match every pair in the fewest turns.</p>
+        </div>
+        <button id="restart-btn" type="button">Shuffle &amp; Restart</button>
+      </header>
+
+      <section class="hud">
+        <div class="stat">
+          <h2>Pairs clicked</h2>
+          <p><span id="pairs-clicked">0</span></p>
+        </div>
+        <div class="stat">
+          <h2>Pairs guessed</h2>
+          <p><span id="pairs-guessed">0</span></p>
+        </div>
+      </section>
+
+      <div id="memory-board"></div>
+      <p id="game-message" class="game-message" aria-live="polite"></p>
+    </main>
+
+    <script src="src/memory.js"></script>
+    <script src="src/index.js"></script>
+  </body>
+</html>

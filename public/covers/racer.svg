@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900" role="img" aria-labelledby="title desc">
+  <title id="title">Javascript Racer cover</title>
+  <desc id="desc">Arcade racing cover with a red sports car driving into the horizon.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#67d7ff" />
+      <stop offset="70%" stop-color="#eef7ff" />
+      <stop offset="100%" stop-color="#fef3c7" />
+    </linearGradient>
+    <linearGradient id="road" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#4b5563" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+  </defs>
+
+  <rect width="720" height="900" fill="url(#sky)" />
+  <rect x="0" y="515" width="720" height="385" fill="#294f17" />
+  <path d="M 248 900 L 334 534 L 386 534 L 472 900 Z" fill="url(#road)" />
+  <path d="M 304 900 L 356 534 L 364 534 L 416 900 Z" fill="#f8fafc" opacity="0.88" />
+  <path d="M 228 900 L 330 534" stroke="#fde047" stroke-width="16" stroke-dasharray="46 30" opacity="0.8" />
+  <path d="M 492 900 L 390 534" stroke="#fde047" stroke-width="16" stroke-dasharray="46 30" opacity="0.8" />
+
+  <g opacity="0.85">
+    <ellipse cx="118" cy="580" rx="84" ry="42" fill="#215111" />
+    <ellipse cx="606" cy="610" rx="98" ry="50" fill="#215111" />
+    <ellipse cx="70" cy="710" rx="124" ry="58" fill="#164e0f" />
+    <ellipse cx="650" cy="735" rx="132" ry="64" fill="#164e0f" />
+  </g>
+
+  <g transform="translate(252 560)">
+    <ellipse cx="110" cy="178" rx="108" ry="28" fill="#09111d" opacity="0.26" />
+    <rect x="26" y="64" width="168" height="82" rx="30" fill="#dc2626" />
+    <path d="M 52 64 L 88 20 L 140 20 L 170 64 Z" fill="#ef4444" />
+    <rect x="72" y="34" width="84" height="32" rx="12" fill="#dbeafe" opacity="0.86" />
+    <rect x="38" y="136" width="44" height="18" rx="8" fill="#fca5a5" />
+    <rect x="138" y="136" width="44" height="18" rx="8" fill="#fca5a5" />
+    <circle cx="56" cy="158" r="26" fill="#111827" />
+    <circle cx="164" cy="158" r="26" fill="#111827" />
+    <circle cx="56" cy="158" r="12" fill="#cbd5e1" />
+    <circle cx="164" cy="158" r="12" fill="#cbd5e1" />
+  </g>
+
+  <g fill="#ffffff" opacity="0.9">
+    <circle cx="106" cy="128" r="18" />
+    <circle cx="132" cy="117" r="24" />
+    <circle cx="162" cy="126" r="18" />
+    <circle cx="556" cy="164" r="16" />
+    <circle cx="582" cy="151" r="22" />
+    <circle cx="613" cy="162" r="16" />
+  </g>
+
+  <text x="60" y="118" fill="#08111f" font-family="Trebuchet MS, Verdana, sans-serif" font-size="98" font-weight="700" letter-spacing="4">
+    RACER
+  </text>
+  <text x="64" y="168" fill="#1e3a8a" font-family="Trebuchet MS, Verdana, sans-serif" font-size="26" font-weight="700" letter-spacing="7">
+    PSEUDO 3D ARCADE
+  </text>
+</svg>

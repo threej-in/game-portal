@@ -12,7 +12,7 @@
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--ink);
-  --font-sans: var(--font-poppins);
+  --font-sans: "Segoe UI", "Trebuchet MS", "Verdana", sans-serif;
 }
 
 body {

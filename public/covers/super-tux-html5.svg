@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900" role="img" aria-labelledby="title desc">
+  <title id="title">Super Tux HTML5 cover</title>
+  <desc id="desc">Snowy platformer cover with icy blocks and Super Tux HTML5 title.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#8ed8ff" />
+      <stop offset="100%" stop-color="#0b2f61" />
+    </linearGradient>
+    <linearGradient id="ice" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f3fbff" />
+      <stop offset="100%" stop-color="#6fd4ff" />
+    </linearGradient>
+  </defs>
+
+  <rect width="720" height="900" fill="url(#sky)" />
+  <circle cx="610" cy="120" r="66" fill="#f5fbff" opacity="0.9" />
+
+  <g fill="#ffffff" opacity="0.85">
+    <circle cx="120" cy="115" r="4" />
+    <circle cx="160" cy="92" r="5" />
+    <circle cx="220" cy="142" r="4" />
+    <circle cx="545" cy="210" r="4" />
+    <circle cx="612" cy="248" r="5" />
+    <circle cx="655" cy="194" r="4" />
+  </g>
+
+  <g transform="translate(76 208)">
+    <rect x="0" y="0" width="568" height="330" rx="36" fill="#123b74" opacity="0.28" />
+    <g transform="translate(62 54)">
+      <rect x="0" y="250" width="370" height="50" rx="12" fill="#89e0ff" />
+      <rect x="34" y="214" width="102" height="44" rx="12" fill="url(#ice)" />
+      <rect x="148" y="178" width="102" height="80" rx="12" fill="url(#ice)" />
+      <rect x="262" y="142" width="102" height="116" rx="12" fill="url(#ice)" />
+      <rect x="226" y="106" width="102" height="44" rx="12" fill="#f6cf4b" />
+      <ellipse cx="302" cy="272" rx="125" ry="24" fill="#09182f" opacity="0.28" />
+      <g transform="translate(118 70)">
+        <ellipse cx="78" cy="142" rx="70" ry="24" fill="#0a1d39" opacity="0.35" />
+        <ellipse cx="82" cy="84" rx="42" ry="54" fill="#111927" />
+        <ellipse cx="82" cy="90" rx="26" ry="34" fill="#f5f7fb" />
+        <circle cx="53" cy="56" r="18" fill="#111927" />
+        <circle cx="110" cy="56" r="18" fill="#111927" />
+        <ellipse cx="82" cy="42" rx="35" ry="31" fill="#111927" />
+        <ellipse cx="82" cy="52" rx="18" ry="14" fill="#f0c15a" />
+        <circle cx="72" cy="40" r="4" fill="#ffffff" />
+        <circle cx="92" cy="40" r="4" fill="#ffffff" />
+        <ellipse cx="61" cy="150" rx="18" ry="9" fill="#f4c54d" />
+        <ellipse cx="103" cy="150" rx="18" ry="9" fill="#f4c54d" />
+      </g>
+    </g>
+  </g>
+
+  <text x="74" y="732" fill="#f7fbff" font-family="Trebuchet MS, Verdana, sans-serif" font-size="84" font-weight="700">
+    Super Tux
+  </text>
+  <text x="78" y="796" fill="#d0ecff" font-family="Trebuchet MS, Verdana, sans-serif" font-size="34" font-weight="600" letter-spacing="5">
+    HTML5
+  </text>
+</svg>

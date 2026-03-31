@@ -8,20 +8,20 @@ export default function Home() {
   return (
     <main>
       <section>
-        <div className="columns-4 gap-3 sm:columns-6 lg:columns-8">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {games.map((game) => (
             <Link
               key={game.slug}
               href={`/play/${game.slug}`}
-              className="group relative mb-3 block break-inside-avoid overflow-hidden rounded-lg border border-slate-800 bg-slate-900 shadow-lg shadow-black/30 transition duration-200 hover:shadow-2xl hover:shadow-black/50"
+              className="group relative block aspect-[4/5] overflow-hidden rounded-lg border border-slate-800 bg-slate-900 shadow-lg shadow-black/30 transition duration-200 hover:shadow-2xl hover:shadow-black/50"
             >
               <Image
                 src={game.coverImage}
                 alt={game.title}
-                width={800}
-                height={1000}
+                fill
+                unoptimized
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className="h-auto w-full object-contain object-center"
+                className="object-cover object-center"
                 priority={game.slug === "diablo-js"}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 transition group-hover:opacity-100" />
