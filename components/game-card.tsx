@@ -14,6 +14,15 @@ export function GameCard({ game }: GameCardProps) {
             {category}
           </span>
         ))}
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            game.mobile
+              ? "border border-cyan-500/30 bg-cyan-500/15 text-cyan-200"
+              : "border border-amber-500/30 bg-amber-500/15 text-amber-200"
+          }`}
+        >
+          {game.mobile ? "Mobile Ready" : "Desktop Best"}
+        </span>
       </div>
       <h3 className="text-xl font-semibold text-slate-100">{game.title}</h3>
       <p className="mt-2 text-sm text-slate-400">{game.shortDescription}</p>

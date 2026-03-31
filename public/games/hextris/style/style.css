@@ -367,6 +367,7 @@ body {
 	color:#ecf0f1;
 	font-family:'Exo', sans-serif;
 	background-color:#ecf0f1;
+	overflow:hidden;
 }
 
 #clickToExit {
@@ -382,6 +383,35 @@ body {
 	width:100%;
 	background-color:#ecf0f1;
 	z-index:0;
+}
+
+@media only screen and (max-width: 640px) {
+	#openSideBar,
+	#pauseBtn,
+	#restartBtn {
+		width: 52px;
+		height: 52px;
+	}
+
+	#highScoreInGameText {
+		top: 8px;
+		width: 150px;
+		margin-left: -75px;
+		font-size: 0.9rem;
+	}
+
+	#HIGHSCORE {
+		width: 180px;
+		margin-left: -90px;
+		font-size: 0.9rem;
+	}
+
+	#buttonCont {
+		transform: translate(-50%, 0) scale(0.82);
+		transform-origin: center bottom;
+		-webkit-transform: translate(-50%, 0) scale(0.82);
+		-webkit-transform-origin: center bottom;
+	}
 }
 #title {
 	z-index:99;

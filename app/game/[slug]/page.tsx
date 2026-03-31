@@ -29,9 +29,23 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
               {category}
             </span>
           ))}
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              game.mobile
+                ? "border border-cyan-500/30 bg-cyan-500/15 text-cyan-200"
+                : "border border-amber-500/30 bg-amber-500/15 text-amber-200"
+            }`}
+          >
+            {game.mobile ? "Mobile Ready" : "Desktop Best"}
+          </span>
         </div>
         <h1 className="mt-4 text-3xl font-bold text-slate-100">{game.title}</h1>
         <p className="mt-3 max-w-3xl text-slate-300">{game.description}</p>
+        <p className="mt-3 max-w-3xl text-sm text-slate-400">
+          {game.mobile
+            ? "This game is expected to work well on smaller screens and touch devices."
+            : "This game is better on larger screens and may rely on keyboard, mouse, or a fixed desktop-style layout."}
+        </p>
         <div className="mt-5 flex flex-wrap gap-2">
           {game.tags.map((tag) => (
             <span key={tag} className="chip">

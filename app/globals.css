@@ -15,6 +15,14 @@
   --font-sans: "Segoe UI", "Trebuchet MS", "Verdana", sans-serif;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
 body {
   background:
     radial-gradient(circle at 10% 10%, #172554 0, transparent 30%),
@@ -22,6 +30,7 @@ body {
   color: var(--ink);
   min-height: 100vh;
   padding: 10px;
+  overflow-x: hidden;
 }
 
 main {
@@ -75,4 +84,10 @@ a {
 
 .btn-secondary:hover {
   background: #334155;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 8px;
+  }
 }

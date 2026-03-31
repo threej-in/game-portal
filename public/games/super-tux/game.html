@@ -1,6 +1,14 @@
 <html>
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
+html, body {
+ width:100%;
+ height:100%;
+ margin:0;
+ padding:0;
+}
 body{
  background:white;
  overflow:hidden;
@@ -34,6 +42,22 @@ body{
 var level = new Level();
 level.draw();
 $("body").append('<embed id="sound" src="sound/Mortimers_chipdisko.wav" autostart="true" hidden="true" loop="true">');
+
+(function () {
+  function fitLevel() {
+    var container = document.getElementById("levelContainer");
+    if (!container) return;
+    var viewportW = window.innerWidth;
+    var viewportH = window.innerHeight;
+    var scale = Math.min(viewportW / 800, viewportH / 600, 1);
+    container.style.transformOrigin = "top left";
+    container.style.transform = "scale(" + scale + ")";
+    container.style.left = Math.max((viewportW - 800 * scale) / 2, 0) + "px";
+    container.style.top = Math.max((viewportH - 600 * scale) / 2, 0) + "px";
+  }
+  window.addEventListener("resize", fitLevel);
+  fitLevel();
+})();
 
 </script>
 </body>
