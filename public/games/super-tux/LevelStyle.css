@@ -1,0 +1,233 @@
+	      * { position: absolute; margin: 0; padding: 0; border: 0; }
+  #levelContainer
+	{
+        width:800;
+        height:600;
+        top:20;
+	left:20;
+	background-image: url('images/imgs/arctis2.jpg');
+	background-repeat:repeat-x;
+	-webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+	border-radius: 8px;
+	webkit-border-radius: 8px;
+	moz-border-radius: 8px;
+ 
+cursor:url(images/imgs/mouse_hover.png);
+cursor: none;
+       	overflow:hidden;
+	}
+
+	#enimiesContainer
+	{
+        width:100%;
+        height:100%;
+	background-repeat:repeat-x;
+	}
+
+	#tuxStage
+	{
+        width:100%;
+        height:550;
+	overflow:hidden;
+	}
+
+	.cloud
+	{
+	z-index:0;
+	}
+
+	.floor
+	{
+	background:url('images/imgs/full_bg.png');
+        -o-background-size: cover;
+	height:50;
+	bottom: 0; 
+	}
+
+	.Barrier
+	{
+ 	background:url('images/imgs/block5.png');
+	background-repeat:repeat;
+	z-index:0;
+	}
+	.Barrier2
+	{
+ 	background:url('images/imgs/grey6.png');
+	background-repeat:repeat;
+	z-index:0;	
+	}
+	.Barrier3
+	{
+ 	background:url('images/imgs/block.png');
+	-webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+	z-index:0;
+	}
+
+	.Stair
+	{
+        background:url('images/imgs/block5.png');
+ 	background-repeat:repeat-x;
+	z-index:0;	
+	}
+	.Stair2
+	{
+        background:url('images/imgs/block4.png');
+ 	background-repeat:repeat-x;
+	z-index:0;	
+	}
+	.imgPlanet
+	{
+   background-image: transparent url("images/imgs/background8.png") no-repeat top left;
+	top:525;
+	z-index:0;
+	}
+	.FailArea
+	{
+	height:50;
+	
+	bottom: 0;	
+	}
+
+	.EndPoint
+	{
+ 	background:url('images/imgs/gside.png');
+	background-repeat:no-repeat;
+	height:260;
+	width:120;
+	top:300;
+	z-index:0;
+	}
+	.tuxHouse
+	{
+ 	background:url('images/imgs/home.png');
+	background-repeat:no-repeat;
+	height:270;
+	width:350;
+	top:395;
+	z-index:0;
+	}
+	.Coin
+	{
+	position:relative;
+	height:35;
+	width:35;
+	}
+	.CenterCoin
+	{
+	text-align:center;
+	}
+	.RightCoin
+	{
+	text-align:right;
+	}
+	.LeftCoin
+	{
+	text-align:left;
+	}
+	.ActionScreen
+	{
+	position:absolute;
+   width:100%;
+   height:100%;
+   top:0;
+	left:0;
+	background-color:black;
+	opacity:0.5;
+z-index:10;
+cursor:url(images/imgs/mouse_hover.png);
+
+	border-radius: 8px;
+	webkit-border-radius: 8px;
+	moz-border-radius: 8px;
+ 
+	}
+	.PauseMenu
+	{
+   position:absolute;
+   width:250px;
+   height:150px;
+   top:225;
+	left:250;
+	background-color:black;
+	opacity:.5;
+z-index:11;
+cursor:url(images/imgs/mouse_hover.png);
+	border-radius: 8px;
+	webkit-border-radius: 8px;
+	moz-border-radius: 8px;
+	}
+	.mnuItem
+	{
+   position:absolute;
+   width:240px;
+   height:25px;
+	color:white;
+text-align:left;
+font-size:18;
+font-weight:bold;
+vertical-align: middle;
+left:5;
+	border-radius: 8px;
+	webkit-border-radius: 8px;
+	moz-border-radius: 8px;
+	}
+	.LifePointer
+	{
+   position:absolute;
+	border-radius: 8px;
+	top:20;
+	webkit-border-radius: 8px;
+	moz-border-radius: 8px;
+	}
+	.lifepoint
+	{
+   position:relative;
+height:16;
+width:16;
+	}
+
+.drawingpix	{ 
+	position:absolute; 
+	top:-50px; 
+	left:-50px;
+}
+.displayArea	
+{ 
+	position:absolute; 
+	top:0px; 
+	left:0px;
+	width:100%;
+	height:300;
+}
+.FinalScore
+{
+ position:absolute;
+   width:250px;
+   height:80px;
+   top:100;
+	left:250;
+	background-color:black;
+	opacity:.5;
+z-index:11;
+cursor:url(images/imgs/mouse_hover.png);
+	border-radius: 8px;
+	webkit-border-radius: 8px;
+	moz-border-radius: 8px;
+}
+
+.varDisplayer
+{
+ position:absolute;
+  	background-color:black;
+	opacity:.5;
+z-index:11;
+	border-radius: 8px;
+	webkit-border-radius: 8px;
+	moz-border-radius: 8px;
+}
+
+

@@ -1,0 +1,40 @@
+<html>
+<head>
+<style>
+body{
+ background:white;
+ overflow:hidden;
+}
+.drawingpix	{ 
+	position:absolute; 
+	top:-50px; 
+	left:-50px;
+}
+.displayArea	
+{ 
+	position:absolute; 
+	top:0px; 
+	left:0px;
+	width:100%;
+	height:300;
+}
+</style>
+<LINK href="LevelStyle.css" rel="stylesheet" type="text/css">
+<script src="jquery.js" type="text/javascript" language="javascript"></script>
+<script src='jquery.sound.js'></script>
+<script src="jquery-collision-1.0.1.js" type="text/javascript" language="javascript"></script>
+
+
+</head>
+<body>
+	
+<script src="LevelComponents.js"></script>
+<script src="Level.js"></script>
+<script>
+var level = new Level();
+level.draw();
+$("body").append('<embed id="sound" src="sound/Mortimers_chipdisko.wav" autostart="true" hidden="true" loop="true">');
+
+</script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<script src='jquery.js'></script>
+<script src='jquery.sound.js'></script>
+<script src="LevelComponents.js"></script>
+<script src="Level.js"></script>
+<script type='text/javascript'>
+var t ;
+var i=1;
+$(document).ready(function() {
+	$(".loading").remove();
+	$(".game").css("visibility","visible");
+	$(".menu ul li a").mouseover(function() {
+		$(this).css("color","white");
+	});
+	$(".menu ul li a").mouseout(function() {
+		$(this).css("color","black");
+	});
+	$("body").append('<embed src="sound/fortress.wav" autostart="true" hidden="true" loop="true">');	
+	t = setInterval("go_tux()",130);
+});
+function go_tux() {
+	
+	tux_left = parseInt($("#player").css("left"));
+	if(tux_left == 410) {
+		$("#player").animate({"top":"+=30"},10);
+	} else if(tux_left == 750) {
+		jump_tux(20);
+	} else if(tux_left==1150) {
+		$("#player").stop().animate({"top":"+=115"},100);
+	} else if(tux_left==2780 ) {
+		$("body").stop().animate({'left':'-=240'});
+		$(".options").animate({'left':'+=240'});
+		$(".menu").animate({'left':'+=240'});
+		$("#logo").animate({'left':'+=240'});
+	} else if(tux_left == 3140) {
+		$("body").css({'left':'0'});
+		$("#player").css({'left':'40','top':'445'});
+		$(".options").animate({'left':'450'});
+		$(".menu").animate({'left':'450'});
+		$("#logo").animate({'left':'500'});
+		setTimeout(t);
+
+		go_tux();
+	} else if(tux_left == 1420) {
+		jump_tux(20);
+		$("#player").animate({"left":"+=10","top":"+=115"},20);	
+	} else if(tux_left == 2010) {
+		$("#player").animate({"left":"+=60","top":"-=30"},20);	
+	} else if(tux_left == 2130) {
+		$("#player").animate({"left":"+=60","top":"-=30"},20);	
+	} else if(tux_left == 2340) {
+		$("#player").animate({"left":"+=60","top":"-=30"},20);	
+	} else if(tux_left == 2590) {
+		$('body').append('<embed src="sound/jump.wav" autostart="true" hidden="true" loop="false">');		
+		$("#player").animate({"top":"-=30","left":"+=60"},100);	
+		$("#player").animate({"top":"+=85","left":"+=60"},100);	
+	} else if(tux_left == 2790) {
+		$('body').append('<embed src="sound/jump.wav" autostart="true" hidden="true" loop="false">');
+		$("#player").animate({"top":"-=150","left":"+=60"},100);	
+		$("#player").animate({"top":"+=10","left":"+=60"},100);	
+		$("#player").animate({"top":"+=10","left":"+=60"},100);	
+	} else if(tux_left == 3110) {
+		$('body').append('<embed src="sound/jump.wav" autostart="true" hidden="true" loop="false">');
+		$("#player").stop().animate({"top":"+=115"},100);	
+	} else if(tux_left==620 || tux_left==1100 || tux_left == 1710 || tux_left == 2300 ) {
+		$("body").animate({'left':'-=400'});
+		$(".options").animate({'left':'+=400'});
+		$(".menu").animate({'left':'+=400'});
+		$("#logo").animate({'left':'+=400'});
+	} 
+		
+		src="images/intro/tux/smalltux-right-"+i+".png";
+		$("#player").animate({"left":"+=10"},0,function() {
+			$(this).attr("src",src);
+		});
+		i++;
+		if(i==9) i=1;
+}
+
+function jump_tux(t) {
+		$('body').append('<embed src="sound/jump.wav" autostart="true" hidden="true" loop="false">');
+		$("#player").attr("src","images/intro/tux/smalltux-jump-right.png");
+		$("#player").stop().animate({"top":"-=20"},t);
+		$("#player").animate({"top":"-=20"},t);
+		$("#player").animate({"left":"+=10","top":"-=20"},t);
+		$("#player").animate({"left":"+=10","top":"-=20"},t);
+		$("#player").animate({"left":"+=10","top":"-=20"},t);
+		$("#player").animate({"left":"+=10","top":"-=20"},t);
+		$("#player").animate({"left":"+=10","top":"-=20"},t);
+		$("#player").animate({"left":"+=10","top":"-=20"},t);
+		$("#player").animate({"left":"+=10","top":"-=20"},t);
+		$("#player").animate({"left":"+=10","top":"-=20"},t);
+		$("#player").animate({"left":"+=30"},t);
+		$("#player").animate({"left":"+=30"},t);
+		$("#player").animate({"left":"+=30","top":"+=10"},t);
+		$("#player").animate({"left":"+=10","top":"+=20"},t);
+		$("#player").animate({"left":"+=10","top":"+=20"},t);
+		$("#player").animate({"left":"+=10","top":"+=10"},t);
+		$("#player").animate({"left":"+=10","top":"+=10"},t);
+		$("#player").animate({"left":"+=10","top":"+=10"},t);
+		$("#player").animate({"left":"+=10","top":"+=5"},t);
+}
+</script>
+<style>
+body {
+	margin:0px;
+	padding:0px;
+	width:3210px;
+	position:absolute;
+	height:100%;
+	overflow:hidden;
+	cursor:url(images/intro/mouse.png);
+}
+.container {
+	background:white url('images/intro/back.jpg');
+	width:100%;
+	height:100%;
+	/*border:1px solid red;*/
+}
+
+.container .box {
+	background:url('images/intro/bg.jpg') repeat-x;
+	/*width:3210px;*/
+	width:100%;
+	height:480px;
+	
+}
+.road {
+	position:absolute;
+	background:url('images/intro/road.jpg') repeat-x;
+	height:100px;	
+}
+.corner {
+	width:32px;
+	height:65px;
+	position:absolute;
+}
+.stair {
+	background:url('images/intro/stair.png') no-repeat;
+	position:absolute;
+	width:133px;
+	height:100px;
+}
+.wood {
+	background: url('images/intro/wood.png') no-repeat;
+	width:160px;
+	height:100px;
+	position:absolute;
+}
+.down {
+	background:url('images/intro/down.png') no-repeat;
+	position:absolute;
+	width:27px;
+	height:165px;
+}
+
+.block {
+	background:url('images/intro/block.png') no-repeat;
+	position:absolute;
+	width:62px;
+	height:65px;
+}
+
+.back_block {
+	background:url('images/intro/back_block.png') no-repeat;
+	position:absolute;
+	width:63px;
+}
+.cloud {
+	background:url('images/intro/cloud.png') no-repeat;
+	position:absolute;
+	width:128px;
+	height:64px;
+}
+
+.star {
+	background:url('images/intro/star/bonus2-1.png') repeat-x;
+	position:absolute;
+	width:128px;
+	height:32px;
+	left:1000px;
+	top:400px;
+}
+#lcorn1{
+	background:url('images/intro/lcorner.png') no-repeat;
+	top:477px;
+	left:400px;
+}
+
+#road1{
+	top:480px;
+	width:400px;
+	left:0px;
+}
+#road2{
+	top:512px;
+	left:432px;
+	width:1600px;
+}
+#back_block1 {
+	left:700px;
+	top:425px;
+	height:90px;
+}
+
+#back_block2 {
+	left:765px;
+	top:425px;
+	height:120px;
+}
+#back_block3 {
+	left:835px;
+	top:425px;
+	height:90px;
+}
+#stair1 {
+	top:448px;
+	left:1500px;
+}
+#road3{
+	top:480px;
+	left:2060px;
+	width:100px;
+}
+
+#rcorn1 {
+	top:477px;
+	left:2030px;
+	background:url('images/intro/rcorner.png') no-repeat;
+}
+#rcorn2 {
+	top:445px;
+	left:2160px;
+	background:url('images/intro/rcorner.png') no-repeat;
+}
+#road4 {
+	width:180px;
+	top:448px;
+	left:2192px;
+}
+#rcorn3 {
+	top:413px;
+	left:2372px;
+	background:url('images/intro/rcorner.png') no-repeat;
+}
+
+#road5 {
+	width:180px;
+	top:415px;
+	left:2403px;
+}
+
+#down1{
+	left:2583px;
+	top:415px;
+}
+#road6 {
+	width:600px;
+	top:543px;
+	left:2605px;
+}
+
+#block1 {
+	top:480px;
+	left:2750px;
+}
+
+#wood2{
+	top:350px;
+	left:2950px;
+}
+
+#cloud1{
+	top:20px;
+	left:250px;
+}
+
+#cloud2{
+	top:20px;
+	left:650px;
+}
+
+#cloud3{
+	top:35px;
+	left:710px;
+}
+
+#cloud4{
+	top:20px;
+	left:1050px;
+}
+
+#cloud5{
+	top:30px;
+	left:1350px;
+}
+
+#cloud6{
+	top:20px;
+	left:1750px;
+}
+
+#cloud7{
+	top:25px;
+	left:2050px;
+}
+#player {
+	position:absolute;
+	top:445px;
+	left:40px;
+}
+.options {
+	position:absolute;
+	width:400px;
+	height:200px;
+	top:350px;
+	left:450px;
+	background:#90908c;
+	opacity:0.4;
+	filter:alpha(opacity=40);
+	border:1px solid red;
+	cursor:url(images/intro/mouse_inside.png);
+}
+#logo {
+	position:absolute;
+	top:50px;
+	left:500px;
+}
+.menu {
+
+	position:absolute;
+	width:400px;
+	height:200px;
+	top:350px;
+	left:450px;
+	border:1px solid red;
+	cursor:url(images/intro/mouse_inside.png);
+}
+
+.menu ul li{
+	padding:20px;
+	list-style:none;
+	color:#000;
+	font-size:40px;
+	font-family:"Curlz MT";
+	font-weight:900;
+}
+.menu ul{
+	padding-left:100px;
+}
+.menu ul li a{
+	cursor:url(images/intro/mouse_hover.png);
+	text-decoration:none;
+	color:black;
+}
+</style>
+<body>
+<div class='game' style='visibility:hidden;'>
+<div class='container'>
+	<div class='box'>
+		<div id="road1" class='road'></div>
+		<div class='corner' id='lcorn1'></div>
+		<div id="road2" class="road"></div>
+		<div id="star1" class="star"></div>
+		<div id="back_block1" class="back_block"></div>
+		<div id="back_block2" class="back_block"></div>
+		<div id="back_block3" class="back_block"></div>
+		<div  class="stair" id='stair1'></div>
+		<div class='corner' id='rcorn1'></div>
+		<div id="road3" class="road"></div>
+		<div class='corner' id='rcorn2'></div>
+		<div id="road4" class="road"></div>
+		<div class='corner' id='rcorn3'></div>
+		<div id="wood2" class="wood"></div>
+		<div id="road5" class="road"></div>
+		<div id="road6" class="road"></div>
+		<div id="block1" class="block"></div>
+		<div id="down1" class="down"></div>
+		<div id='cloud1' class='cloud'></div>
+		<div id='cloud2' class='cloud'></div>
+		<div id='cloud3' class='cloud'></div>
+		<div id='cloud4' class='cloud'></div>
+		<div id='cloud5' class='cloud'></div>
+		<div id='cloud6' class='cloud'></div>
+		<div id='cloud7' class='cloud'></div>
+		<img src='images/intro/tux/smalltux-jump-right.png' id='player'/>
+	</div>	
+</div>
+	<img id='logo' src='images/intro/logo.png'>
+	<div class='options'></div>
+	<div class='menu'>
+		<ul>
+			<li><a href='game.html'>Start Game</a></li>
+			<li><a onclick='self.close()'>Quit</a></li>
+		</ul>
+	</div>
+<embed src="sound/fortress.wav" autostart="true" hidden="true" loop="true" style="display:none">
+<embed src="sound/jump.wav" autostart="true" hidden="true" loop="false" style="display:none" >
+<img src="images/intro/tux/smalltux-right-1.png" style="display:none" />
+<img src="images/intro/tux/smalltux-right-2.png" style="display:none" />
+<img src="images/intro/tux/smalltux-right-3.png" style="display:none" />
+<img src="images/intro/tux/smalltux-right-4.png" style="display:none" />
+<img src="images/intro/tux/smalltux-right-5.png" style="display:none" />
+<img src="images/intro/tux/smalltux-right-6.png" style="display:none" />
+<img src="images/intro/tux/smalltux-right-7.png" style="display:none" />
+<img src="images/intro/tux/smalltux-right-8.png" style="display:none" />
+</div>
+<div class="loading"><p>Loading ....</p></div>
+</body>
