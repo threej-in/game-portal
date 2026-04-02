@@ -2,9 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { HomeFab } from "@/components/home-fab";
 import { getAllGames } from "@/lib/games";
+import { getMostPlayedGameSlug, readPlayStats, sortGamesByPopularity } from "@/lib/play-stats";
 
-export default function Home() {
-  const games = getAllGames();
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [stats, mostPlayedSlug] = await Promise.all([readPlayStats(), getMostPlayedGameSlug()]);
+  const games = sortGamesByPopularity(getAllGames(), stats);
 
   return (
     <main>
@@ -26,15 +30,22 @@ export default function Home() {
                 priority={game.slug === "diablo-js"}
               />
               <div className="absolute left-2 top-2 z-10">
-                <span
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide backdrop-blur ${
-                    game.mobile
-                      ? "border border-cyan-300/70 bg-cyan-950/90 text-cyan-50"
-                      : "border border-amber-500/30 bg-amber-500/15 text-amber-100"
-                  }`}
-                >
-                  {game.mobile ? "Mobile" : "Desktop"}
-                </span>
+                <div className="flex flex-col gap-2">
+                  {game.slug === mostPlayedSlug ? (
+                    <span className="rounded-full border border-fuchsia-300/70 bg-fuchsia-950/90 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-fuchsia-50 backdrop-blur">
+                      Most Played
+                    </span>
+                  ) : null}
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide backdrop-blur ${
+                      game.mobile
+                        ? "border border-cyan-300/70 bg-cyan-950/90 text-cyan-50"
+                        : "border border-amber-500/30 bg-amber-500/15 text-amber-100"
+                    }`}
+                  >
+                    {game.mobile ? "Mobile" : "Desktop"}
+                  </span>
+                </div>
               </div>
               <Link
                 href={`/game/${game.slug}`}

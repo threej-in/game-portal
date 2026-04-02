@@ -177,6 +177,22 @@ const coreGames: Game[] = [
     attribution: "Jake Gordon and contributors",
     embedUrl: "/games/racer/play.html",
   },
+  {
+    slug: "isocity-ocean",
+    title: "Ocean",
+    coverImage: "/covers/isocity-ocean.png",
+    shortDescription: "Underwater survival arcade game built with Polymatic and Stage.js.",
+    description:
+      "Dive through an abstract ocean, manage oxygen, collect bubbles and valuables, avoid hostile sea life, and spend your earnings on upgrades as the run gets harder.",
+    categories: ["Arcade", "Survival"],
+    tags: ["Underwater", "Upgrades", "Score Attack"],
+    featured: false,
+    mobile: true,
+    license: "MIT",
+    sourceUrl: "https://github.com/piqnt/polymatic-example-ocean",
+    attribution: "piqnt",
+    embedUrl: "/games/isocity-ocean/index.html",
+  },
 ];
 
 const games: Game[] = [...coreGames, ...talha37Games];

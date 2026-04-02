@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import { getAllGames, getGameBySlug } from "@/lib/games";
+import { getGameBySlug } from "@/lib/games";
+import { incrementPlayCount } from "@/lib/play-stats";
 
 type PlayPageProps = {
   params: Promise<{
@@ -7,9 +8,7 @@ type PlayPageProps = {
   }>;
 };
 
-export function generateStaticParams() {
-  return getAllGames().map((game) => ({ slug: game.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function PlayPage({ params }: PlayPageProps) {
   const { slug } = await params;
@@ -19,5 +18,6 @@ export default async function PlayPage({ params }: PlayPageProps) {
     notFound();
   }
 
+  await incrementPlayCount(slug);
   redirect(game.embedUrl);
 }
