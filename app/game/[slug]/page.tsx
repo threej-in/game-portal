@@ -32,7 +32,7 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
               game.mobile
-                ? "border border-cyan-500/30 bg-cyan-500/15 text-cyan-200"
+                ? "border border-cyan-300/70 bg-cyan-950/90 text-cyan-50"
                 : "border border-amber-500/30 bg-amber-500/15 text-amber-200"
             }`}
           >
@@ -57,6 +57,9 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
           <Link href={`/play/${game.slug}`} className="btn btn-primary">
             Play now
           </Link>
+          <a href={game.sourceUrl} className="btn btn-secondary" target="_blank" rel="noreferrer">
+            Source Repo
+          </a>
           <Link href="/games" className="btn btn-secondary">
             Back to catalog
           </Link>

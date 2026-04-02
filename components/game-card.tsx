@@ -17,7 +17,7 @@ export function GameCard({ game }: GameCardProps) {
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${
             game.mobile
-              ? "border border-cyan-500/30 bg-cyan-500/15 text-cyan-200"
+              ? "border border-cyan-300/70 bg-cyan-950/90 text-cyan-50"
               : "border border-amber-500/30 bg-amber-500/15 text-amber-200"
           }`}
         >
