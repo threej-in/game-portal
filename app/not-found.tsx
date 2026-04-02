@@ -38,7 +38,7 @@ export default function NotFound() {
               key={game.slug}
               className="group relative aspect-[4/5] overflow-hidden rounded-lg border border-slate-800 bg-slate-900 shadow-lg shadow-black/30 transition duration-200 hover:shadow-2xl hover:shadow-black/50"
             >
-              <Link href={`/play/${game.slug}`} className="absolute inset-0 z-0" aria-label={`Play ${game.title}`} />
+              <Link href={`/play/${game.slug}`} className="absolute inset-0 z-10" aria-label={`Play ${game.title}`} />
               <Image
                 src={game.coverImage}
                 alt={game.title}
@@ -67,8 +67,8 @@ export default function NotFound() {
                   <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 4.75a1.25 1.25 0 1 1-1.25 1.25A1.25 1.25 0 0 1 12 6.75Zm1.5 10.5h-3v-1.5h.75V11.5h-1V10h2.5v5.75h.75Z" />
                 </svg>
               </Link>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 px-3 pb-3 text-sm font-semibold text-white sm:text-base">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-3 text-sm font-semibold text-white sm:text-base">
                 {game.title}
               </div>
             </article>
