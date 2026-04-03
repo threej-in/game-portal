@@ -193,6 +193,22 @@ const coreGames: Game[] = [
     attribution: "piqnt",
     embedUrl: "/games/isocity-ocean/index.html",
   },
+  {
+    slug: "pigeon-ascent",
+    title: "Pigeon Ascent",
+    coverImage: "/covers/pigeon-ascent.png",
+    shortDescription: "Godot-made pigeon battler with upgrades, items, and boss fights.",
+    description:
+      "Fight your way upward as a battle pigeon, buy upgrades, collect items, and survive increasingly chaotic encounters in this self-hosted Godot HTML5 export.",
+    categories: ["Arcade", "Action"],
+    tags: ["Godot", "Upgrades", "Battles"],
+    featured: false,
+    mobile: false,
+    license: "MIT",
+    sourceUrl: "https://github.com/Escada-Games/pigeonAscent",
+    attribution: "Escada Games",
+    embedUrl: "/games/pigeon-ascent/index.html",
+  },
 ];
 
 const games: Game[] = [...coreGames, ...talha37Games];
