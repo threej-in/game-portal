@@ -1,0 +1,47 @@
+<svg width="640" height="880" viewBox="0 0 640 880" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="880" rx="36" fill="url(#bg)"/>
+  <rect x="84" y="180" width="472" height="452" rx="30" fill="#1658D5"/>
+  <rect x="118" y="220" width="404" height="372" rx="22" fill="#0F43A4"/>
+  <g fill="#D7E6FF">
+    <circle cx="168" cy="270" r="34"/>
+    <circle cx="244" cy="270" r="34"/>
+    <circle cx="320" cy="270" r="34"/>
+    <circle cx="396" cy="270" r="34"/>
+    <circle cx="472" cy="270" r="34"/>
+    <circle cx="168" cy="346" r="34"/>
+    <circle cx="244" cy="346" r="34"/>
+    <circle cx="320" cy="346" r="34"/>
+    <circle cx="396" cy="346" r="34"/>
+    <circle cx="472" cy="346" r="34"/>
+    <circle cx="168" cy="422" r="34"/>
+    <circle cx="244" cy="422" r="34"/>
+    <circle cx="320" cy="422" r="34"/>
+    <circle cx="396" cy="422" r="34"/>
+    <circle cx="472" cy="422" r="34"/>
+    <circle cx="168" cy="498" r="34"/>
+    <circle cx="244" cy="498" r="34"/>
+    <circle cx="320" cy="498" r="34"/>
+    <circle cx="396" cy="498" r="34"/>
+    <circle cx="472" cy="498" r="34"/>
+    <circle cx="168" cy="574" r="34"/>
+    <circle cx="244" cy="574" r="34"/>
+    <circle cx="320" cy="574" r="34"/>
+    <circle cx="396" cy="574" r="34"/>
+    <circle cx="472" cy="574" r="34"/>
+  </g>
+  <circle cx="168" cy="574" r="28" fill="#F2C94C"/>
+  <circle cx="244" cy="498" r="28" fill="#EB5757"/>
+  <circle cx="320" cy="422" r="28" fill="#F2C94C"/>
+  <circle cx="396" cy="346" r="28" fill="#EB5757"/>
+  <circle cx="472" cy="270" r="28" fill="#F2C94C"/>
+  <circle cx="320" cy="574" r="28" fill="#EB5757"/>
+  <circle cx="396" cy="574" r="28" fill="#F2C94C"/>
+  <text x="320" y="735" text-anchor="middle" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="88" font-weight="800">C4</text>
+  <text x="320" y="790" text-anchor="middle" fill="#C8DAFF" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="600">Connect Four</text>
+  <defs>
+    <linearGradient id="bg" x1="72" y1="70" x2="560" y2="824" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0C1738"/>
+      <stop offset="1" stop-color="#060A16"/>
+    </linearGradient>
+  </defs>
+</svg>

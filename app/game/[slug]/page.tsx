@@ -20,6 +20,9 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
     notFound();
   }
 
+  const hasExternalSource = /^https?:\/\//i.test(game.sourceUrl);
+  const sourceLabel = hasExternalSource ? "Source Repo" : "Project Link";
+
   return (
     <main>
       <article className="card p-6">
@@ -58,7 +61,7 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
             Play now
           </Link>
           <a href={game.sourceUrl} className="btn btn-secondary" target="_blank" rel="noreferrer">
-            Source Repo
+            {sourceLabel}
           </a>
           <Link href="/games" className="btn btn-secondary">
             Back to catalog
