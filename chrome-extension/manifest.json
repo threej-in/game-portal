@@ -1,8 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Threej.in Games",
+  "short_name": "Threej Games",
   "description": "Browse and launch games from threej.in directly from Chrome.",
   "version": "1.0.0",
+  "homepage_url": "https://threej.in",
+  "minimum_chrome_version": "114",
   "action": {
     "default_title": "Threej.in Games",
     "default_popup": "popup.html"

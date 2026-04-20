@@ -23,3 +23,9 @@ This extension shows the live game catalog from `https://threej.in` and opens th
 - `popup.html`
 - `popup.css`
 - `popup.js`
+- `PRIVACY_POLICY.md`
+- `STORE_LISTING.md`
+
+## Web Store package
+
+Create the upload ZIP from this folder only. Do not zip the whole project root.
