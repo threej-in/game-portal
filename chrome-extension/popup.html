@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Threej.in Games</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">THREEJ.IN</p>
+          <h1>Play Games</h1>
+        </div>
+        <a class="open-site" href="https://threej.in" target="_blank" rel="noreferrer">Open site</a>
+      </header>
+
+      <label class="search-wrap" for="search-input">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="search-input" type="search" placeholder="Search games..." autocomplete="off" />
+      </label>
+
+      <p id="status" class="status">Loading games...</p>
+      <section id="games-grid" class="games-grid" aria-live="polite"></section>
+    </main>
+
+    <template id="game-card-template">
+      <button class="game-card" type="button">
+        <img class="game-cover" alt="" loading="lazy" />
+        <span class="game-title"></span>
+      </button>
+    </template>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
