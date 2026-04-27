@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/sync-external-games.mjs --if-enabled && next build",
+    "build": "node scripts/sync-external-games.mjs --if-enabled && node scripts/precompress-static.mjs && next build",
+    "compress:static": "node scripts/precompress-static.mjs",
     "sync:games": "node scripts/sync-external-games.mjs",
     "start": "next start",
     "start:cpanel": "node app.js",

@@ -1,9 +1,10 @@
-import { talha37Games } from "./talha37-games";
+﻿import { talha37Games } from "./talha37-games";
 
 export type Game = {
   slug: string;
   title: string;
   coverImage: string;
+  coverFit?: "cover" | "contain";
   shortDescription: string;
   description: string;
   categories: string[];
@@ -273,6 +274,39 @@ const coreGames: Game[] = [
     attribution: "conor-wilson and contributors; local export provided by user",
     embedUrl: "/games/la-ola/index.html",
   },
+  {
+    slug: "wavz",
+    title: "ooqo",
+    coverImage: "/covers/ooqo.png",
+    coverFit: "cover",
+    shortDescription: "A slick arcade score-chaser where movement becomes rhythm.",
+    description:
+      "A slick arcade score-chaser where movement becomes rhythm. Glide across fish to survive, chain combos to build momentum, and never step where you shouldn't. Simple rules, deep flow state, plus a hypnotic soundtrack and leaderboard that will steal your time.",
+    categories: ["Arcade", "Action"],
+    tags: ["Godot", "Score Chaser", "Rhythm"],
+    featured: false,
+    mobile: false,
+    license: "No license file provided with the local export",
+    sourceUrl: "https://github.com/aznoqmous/fish-storm",
+    attribution: "aznoqmous and contributors; local export provided by user",
+    embedUrl: "/games/wavz/index.html",
+  },
+  {
+    slug: "tidal-town",
+    title: "Tidal Town",
+    coverImage: "/covers/tidal-town.png",
+    shortDescription: "City planning meets divine disaster in a bright tactical score-chaser.",
+    description:
+      "City planning meets divine disaster. Slide buildings into color groups to score points and calm Poseidon, who is absolutely not calm. This game is easy to learn, surprisingly tactical, and constantly evolving as waves reshape the board. Bright visuals, smooth play, and a playful take on managing chaos one house at a time.",
+    categories: ["Strategy", "Puzzle"],
+    tags: ["Godot", "City Builder", "Score Chaser"],
+    featured: false,
+    mobile: false,
+    license: "No license file provided with the local export",
+    sourceUrl: "https://github.com/Grumelkeks/GO2025-Waves",
+    attribution: "Grumelkeks and contributors; local export provided by user",
+    embedUrl: "/games/tidal-town/index.html",
+  },
 ];
 
 const games: Game[] = [...coreGames, ...talha37Games];
@@ -307,3 +341,4 @@ export function searchGames(query?: string, category?: string): Game[] {
     return categoryMatch && text.includes(q);
   });
 }
+
