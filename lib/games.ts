@@ -315,6 +315,10 @@ export function getAllGames(): Game[] {
   return games;
 }
 
+export function getNewestGames(limit = 5): Game[] {
+  return [...coreGames].slice(-limit).reverse();
+}
+
 export function getGameBySlug(slug: string): Game | undefined {
   return games.find((game) => game.slug === slug);
 }

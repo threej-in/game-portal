@@ -1,14 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { HomeFab } from "@/components/home-fab";
-import { getAllGames } from "@/lib/games";
+import { getAllGames, getNewestGames } from "@/lib/games";
 import { getMostPlayedGameSlug, readPlayStats, sortGamesByPopularity } from "@/lib/play-stats";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const [stats, mostPlayedSlug] = await Promise.all([readPlayStats(), getMostPlayedGameSlug()]);
-  const games = sortGamesByPopularity(getAllGames(), stats);
+  const newestGames = getNewestGames(5);
+  const newestSlugs = new Set(newestGames.map((game) => game.slug));
+  const remainingGames = sortGamesByPopularity(
+    getAllGames().filter((game) => !newestSlugs.has(game.slug)),
+    stats,
+  );
+  const games = [...newestGames, ...remainingGames];
 
   return (
     <main>
