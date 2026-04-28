@@ -1,6 +1,16 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { GameCard } from "@/components/game-card";
 import { getAllCategories, searchGames } from "@/lib/games";
+
+export const metadata: Metadata = {
+  title: "Browse Games",
+  description:
+    "Browse the full Threej Games catalog by title and category. Find free browser puzzle, racing, arcade, strategy, and board games.",
+  alternates: {
+    canonical: "/games",
+  },
+};
 
 type GamesPageProps = {
   searchParams: Promise<{

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllGames, getGameBySlug } from "@/lib/games";
@@ -10,6 +11,48 @@ type GameDetailsPageProps = {
 
 export function generateStaticParams() {
   return getAllGames().map((game) => ({ slug: game.slug }));
+}
+
+export async function generateMetadata({ params }: GameDetailsPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const game = getGameBySlug(slug);
+
+  if (!game) {
+    return {
+      title: "Game Not Found",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  const description = `${game.shortDescription} ${game.mobile ? "Mobile-friendly browser game." : "Best played on desktop."} Source available at ${game.sourceUrl}.`;
+
+  return {
+    title: `${game.title} Game Guide`,
+    description,
+    alternates: {
+      canonical: `/game/${game.slug}`,
+    },
+    openGraph: {
+      title: `${game.title} | Threej Games`,
+      description,
+      url: `/game/${game.slug}`,
+      images: [
+        {
+          url: game.coverImage,
+          alt: `${game.title} cover art`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${game.title} | Threej Games`,
+      description,
+      images: [game.coverImage],
+    },
+  };
 }
 
 export default async function GameDetailsPage({ params }: GameDetailsPageProps) {

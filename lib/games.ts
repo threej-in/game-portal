@@ -95,7 +95,7 @@ const coreGames: Game[] = [
     mobile: false,
     license: "MIT",
     sourceUrl: "https://github.com/your-org/game-portal",
-    attribution: "Arcadia Portal local game",
+    attribution: "Threej Games local game",
     embedUrl: "/games/space-shooter/index.html",
   },
   {
@@ -306,6 +306,22 @@ const coreGames: Game[] = [
     sourceUrl: "https://github.com/Grumelkeks/GO2025-Waves",
     attribution: "Grumelkeks and contributors; local export provided by user",
     embedUrl: "/games/tidal-town/index.html",
+  },
+  {
+    slug: "libreludo",
+    title: "LibreLudo",
+    coverImage: "/covers/libreludo.jpg",
+    shortDescription: "Modern open-source Ludo with local multiplayer and bot opponents.",
+    description:
+      "A modern, ad-free, open-source Ludo game with a clean UI, local multiplayer, and bot opponents. It is easy to pick up, works well across desktop and mobile screens, and includes guides for setup and gameplay inside the app.",
+    categories: ["Board", "Strategy"],
+    tags: ["Ludo", "React", "Local Multiplayer"],
+    featured: false,
+    mobile: true,
+    license: "AGPL-3.0-only",
+    sourceUrl: "https://github.com/priyanshurav/libreludo",
+    attribution: "priyanshurav and contributors",
+    embedUrl: "/games/libreludo/index.html",
   },
 ];
 

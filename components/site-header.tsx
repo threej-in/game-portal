@@ -8,7 +8,7 @@ export function SiteHeader() {
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700 text-white">
             A
           </span>
-          Arcadia Portal
+          Threej Games
         </Link>
         <nav className="flex items-center gap-2 text-sm font-medium text-slate-300">
           <Link href="/games" className="btn btn-secondary">

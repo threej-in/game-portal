@@ -1,4 +1,14 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Suggest a Game",
+  description:
+    "Suggest an open-source browser game for Threej Games. Send a repository or playable link for review.",
+  alternates: {
+    canonical: "/suggest-game",
+  },
+};
 
 type SuggestGamePageProps = {
   searchParams: Promise<{
