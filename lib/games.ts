@@ -323,6 +323,22 @@ const coreGames: Game[] = [
     attribution: "priyanshurav and contributors",
     embedUrl: "/games/libreludo/index.html",
   },
+  {
+    slug: "twitchdodge",
+    title: "DODGE",
+    coverImage: "/covers/twitchdodge.png",
+    shortDescription: "Fast browser arcade survival game with powerups, coin chains, and chiptune energy.",
+    description:
+      "Avoid the red and survive as long as possible in this browser-based arcade game. It mixes twitch reflex movement with powerups, coin chains, shields, and a bright retro presentation built for quick replay loops.",
+    categories: ["Arcade", "Action"],
+    tags: ["Reflex", "High Score", "HTML5"],
+    featured: false,
+    mobile: true,
+    license: "No license file provided in the repository",
+    sourceUrl: "https://github.com/twitchdodge/twitchdodge",
+    attribution: "twitchdodge and contributors",
+    embedUrl: "/games/twitchdodge/index.html",
+  },
 ];
 
 const games: Game[] = [...coreGames, ...talha37Games];
