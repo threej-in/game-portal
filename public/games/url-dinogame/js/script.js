@@ -1,0 +1,223 @@
+"use strict";
+document.body.classList.remove('no-js');
+var i = 0,
+    jump = 0,
+    foodSpawn = 0,
+    fruitSpawn = randomIntFromInterval(130, 20),
+    enemySpawn = 30,
+    powerupSpawn = randomIntFromInterval(180, 60),
+    invincible = 0,
+    timeLeft = 5,
+    playerPos = 0,
+    started = 0,
+    score = 0,
+    countingDown = 0,
+    runGame, powerupTime, button = document.querySelector(".sound-btn"),
+    grid = [],
+    food = [],
+    fruit = [],
+    enemy = [],
+    powerup = [];
+
+function safePlay(id) {
+    var el = document.getElementById(id);
+    if (el) {
+        el.currentTime = 0;
+        el.play().catch(function () { });
+    }
+}
+
+function randomIntFromInterval(o, e) {
+    return Math.floor(Math.random() * (e - o + 1) + o)
+}
+
+function powerupTimer() {
+    timeLeft <= 1 && (clearInterval(powerupTime), invincible = 0, timeLeft = 6);
+    --timeLeft
+}
+
+function playerJump() {
+    switch (jump) {
+        case 5:
+            grid[playerPos] = "·" + "^";
+            break;
+        case 4:
+            grid[playerPos] = "·" + "'";
+            break;
+        case 3:
+            grid[playerPos] = "·" + "'";
+            break;
+        default:
+            grid[playerPos] = "·" + "C"
+    }
+}
+
+function gameLogic() {
+    if (started == 1) {
+        for (i = 0; i < 55; i++) grid[i] = "·";
+        invincible == 1 ? (grid[playerPos] = "·" + timeLeft + "+") : jump > 0 ? (--jump, playerJump()) : (grid[playerPos] = "·" + "C");
+        if (foodSpawn > 0) --foodSpawn;
+        else if (!(enemy.includes(55))) {
+            i = 0;
+            while (food[i] > 0) i++;
+            food[i] = 55;
+            foodSpawn = 1
+        }
+        for (i = 0; i < food.length; i++) --food[i], food[i] >= 0 && (food[i] == playerPos ? (invincible == 1 ? (grid[food[i]] = "·" + timeLeft + "+", food[i] = 0, ++score) : jump > 2 ? (playerJump(), food[i] = 0) : (grid[playerPos] = "·" + "c", food[i] = 0, ++score)) : (grid[food[i]] = "•"));
+        if (fruitSpawn > 0) --fruitSpawn;
+        else if (!(food.includes(53)) && !(enemy.includes(54))) {
+            i = 0;
+            while (fruit[i] > 0) i++;
+            fruit[i] = 55;
+            fruitSpawn = randomIntFromInterval(170, 50)
+        }
+        for (i = 0; i < fruit.length; i++) --fruit[i], fruit[i] >= 0 && (fruit[i] == playerPos ? (invincible == 1 ? (grid[fruit[i]] = "·" + timeLeft + "+", fruit[i] = 0, score += 5) : jump > 2 ? (playerJump(), fruit[i] = 0) : (grid[playerPos] = "·" + "c", fruit[i] = 0, score += 5)) : (grid[fruit[i]] = "@"));
+        if (enemySpawn > 0) --enemySpawn;
+        else if (!(food.includes(53))) {
+            i = 0;
+            while (enemy[i] > 0) i++;
+            enemy[i] = 55;
+            window._diffPreset ? (enemySpawn = randomIntFromInterval(window._diffPreset.enemyMin, window._diffPreset.enemyMax)) : score < 50 ? (enemySpawn = randomIntFromInterval(26, 6)) : score < 180 ? (enemySpawn = randomIntFromInterval(20, 4)) : score < 280 ? (enemySpawn = randomIntFromInterval(13, 4)) : (enemySpawn = randomIntFromInterval(8, 4))
+        }
+        for (i = 0; i < enemy.length; i++) --enemy[i], enemy[i] >= 0 && (enemy[i] == playerPos ? (invincible == 1 ? (grid[enemy[i]] = "·" + timeLeft + "+", enemy[i] = 0, --score) : jump > 2 ? (playerJump(), enemy[i] = 0) : (grid[enemy[i]] = "·" + "×" + "!" + "×", enemy[i] = 0, --score, (button !== null && button.innerHTML == "Sound: on" && (!window._mp || window._mp.state === 'IDLE') && safePlay("faaah")), started = 0)) : (grid[enemy[i]] = "X"));
+        if (powerupSpawn > 0) --powerupSpawn;
+        else if (!(food.includes(53)) && !(enemy.includes(54))) {
+            i = 0;
+            while (powerup[i] > 0) i++;
+            powerup[i] = 55;
+            powerupSpawn = randomIntFromInterval(400, 100)
+        }
+        for (i = 0; i < powerup.length; i++) --powerup[i], powerup[i] >= 0 && (powerup[i] == playerPos ? (jump > 2 ? (playerJump(), powerup[i] = 0) : (powerupTime = setInterval(powerupTimer, 1e3), grid[powerup[i]] = "·" + timeLeft + "+", powerup[i] = 0, invincible = 1)) : (grid[powerup[i]] = "*"));
+        history.replaceState(null, '', "#" + grid.join(''));
+
+        var scoreDisplay = document.getElementById("high-score");
+        var scoreLabel = document.getElementById("score-label");
+        if (scoreDisplay) {
+            scoreDisplay.textContent = score;
+            scoreDisplay.classList.add("playing");
+            if (scoreLabel) scoreLabel.textContent = "Current Score";
+            var hi = parseInt(localStorage.getItem("highScore") || "0");
+            if (score > hi && score > 0) {
+                if (!scoreDisplay.classList.contains("new-record")) {
+                    scoreDisplay.classList.add("new-record");
+                    setTimeout(function () { scoreDisplay.classList.remove("new-record"); }, 3000);
+                }
+            }
+        }
+    } else {
+        clearInterval(runGame);
+        var scoreDisplay = document.getElementById("high-score");
+        var scoreLabel = document.getElementById("score-label");
+        if (scoreDisplay) {
+            scoreDisplay.classList.remove("playing");
+            scoreDisplay.classList.remove("new-record");
+        }
+        if (scoreLabel) scoreLabel.textContent = "High Score";
+        if (button !== null && button.innerHTML.indexOf("on") !== -1) {
+            setTimeout(function () { safePlay("gameover"); }, 600);
+        }
+        grid = []; food = []; fruit = []; enemy = []; powerup = [];
+        jump = 0; foodSpawn = 0;
+        fruitSpawn = randomIntFromInterval(150, 80);
+        enemySpawn = 30;
+        powerupSpawn = randomIntFromInterval(250, 60);
+        // ★ Only save high score in single-player mode
+        if (!window._mp || window._mp.state === 'IDLE') {
+            localStorage.getItem("highScore") < score && localStorage.setItem("highScore", score);
+        }
+        setTimeout(function () {
+            history.replaceState(null, '', "#" + "··×·" + "YOU·DIED!" + "·" + score + "pts");
+            button !== null && displayScore();
+        }, 200);
+        setTimeout(function () {
+            history.replaceState(null, '', "#" + "···" + "GAME·OVER!" + "···" + score + "pts" + "··»··" + "press·any·key·to·replay");
+            // ★ Don't auto-restart in multiplayer mode
+            if (!window._mp || window._mp.state === 'IDLE') startGame();
+        }, 1600);
+    }
+}
+
+function keyPress() {
+    started = 1;
+    document.onkeydown = function (o) {
+        o.preventDefault();
+        var e = o.keyCode;
+        (e == 38 || e == 32) && jump === 0 && (jump = 5)
+    }
+}
+
+function startGame() {
+    document.onkeydown = function (o) {
+        var e = o.keyCode;
+        if (e == 224 || e == 91 || countingDown == 1) return;
+        // Don't start game if user is typing in an input field or modal is open
+        var target = o.target || o.srcElement;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+
+        // Prevent single-player restart if in active multiplayer session
+        if (window._mp && window._mp.state !== 'IDLE') return;
+
+        var modal = document.getElementById('mp-modal-overlay');
+        if (modal && modal.classList.contains('mp-modal-overlay--open')) return;
+        o.preventDefault();
+        countingDown = 1;
+        score = 0;
+        button !== null && (button.innerHTML.indexOf("on") !== -1 && safePlay("countdown"));
+        history.replaceState(null, '', "#" + "···3···▸");
+        setTimeout(function () {
+            history.replaceState(null, '', "#" + "···2···▸");
+        }, 1000);
+        setTimeout(function () {
+            history.replaceState(null, '', "#" + "···1···▸");
+        }, 2000);
+        setTimeout(function () {
+            history.replaceState(null, '', "#" + "···GO!···▸");
+            setTimeout(function () {
+                countingDown = 0;
+                keyPress();
+                var label = document.getElementById("score-label");
+                if (label) label.textContent = "Score";
+                var display = document.getElementById("high-score");
+                if (display) {
+                    display.textContent = "0";
+                    display.classList.add("playing");
+                }
+                runGame = setInterval(gameLogic, window._gameTickMs || 100);
+            }, 300);
+        }, 3000);
+    }
+}
+
+history.replaceState(null, '', location.pathname.replace(/\b\/$/, ''));
+history.replaceState(null, '', "#" + "···" + "PRESS-ANY-KEY-TO-PLAY" + "···▸");
+
+document.addEventListener('keydown', function unlockAudio() {
+    document.querySelectorAll('audio').forEach(function (a) {
+        a.play().catch(function () { });
+        a.pause();
+        a.currentTime = 0;
+    });
+    document.removeEventListener('keydown', unlockAudio);
+}, { once: true });
+
+startGame();
+button !== null && (localStorage.getItem("soundPref") == "Sound: off" && (button.innerHTML = "🔇 Sound: off"));
+if (button !== null && localStorage.getItem("soundPref") !== "Sound: off") {
+    button.innerHTML = "🔊 Sound: on";
+}
+
+function toggleSound() {
+    if (button.innerHTML.indexOf("on") !== -1) {
+        button.innerHTML = "🔇 Sound: off";
+        localStorage.setItem("soundPref", "Sound: off");
+    } else {
+        button.innerHTML = "🔊 Sound: on";
+        localStorage.setItem("soundPref", "Sound: on");
+        safePlay("toggle-sound");
+    }
+}
+
+function displayScore() {
+    (localStorage.getItem("highScore") === null) || (document.getElementById("high-score").innerHTML = localStorage.getItem("highScore"))
+}
+button !== null && displayScore()
