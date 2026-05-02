@@ -28,15 +28,6 @@ export default async function Home() {
 
   return (
     <main>
-      <section className="mb-5 rounded-3xl border border-slate-800 bg-slate-950/70 px-5 py-6 shadow-lg shadow-black/20 sm:px-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">Threej Games</p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-100 sm:text-4xl">Free browser games you can play instantly</h1>
-        <p className="mt-3 max-w-3xl text-sm text-slate-400 sm:text-base">
-          Explore open-source arcade, puzzle, racing, strategy, and board games playable directly in your browser.
-          New additions are pinned first, followed by the most-played games on the site.
-        </p>
-      </section>
-
       <section aria-label="Game catalog">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 xl:grid-cols-6">
           {games.map((game) => (

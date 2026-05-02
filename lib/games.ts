@@ -53,7 +53,7 @@ const coreGames: Game[] = [
   {
     slug: "2048",
     title: "2048",
-    coverImage: "/covers/2048.svg",
+    coverImage: "/covers/2048.gif",
     shortDescription: "Merge tiles until you hit 2048 and beyond.",
     description:
       "Slide numbered tiles across a 4x4 board to combine values strategically. Easy to learn, hard to master.",
@@ -181,7 +181,7 @@ const coreGames: Game[] = [
   {
     slug: "isocity-ocean",
     title: "Ocean",
-    coverImage: "/covers/isocity-ocean.png",
+    coverImage: "/covers/ocean.png",
     shortDescription: "Underwater survival arcade game built with Polymatic and Stage.js.",
     description:
       "Dive through an abstract ocean, manage oxygen, collect bubbles and valuables, avoid hostile sea life, and spend your earnings on upgrades as the run gets harder.",
@@ -213,7 +213,7 @@ const coreGames: Game[] = [
   {
     slug: "hartwig-chess-set",
     title: "3D Hartwig Chess Set",
-    coverImage: "/games/hartwig-chess-set/mckps/fw-game.png",
+    coverImage: "/covers/chess.png",
     shortDescription: "Stylized 3D chess experience built with HTML, CSS, and JavaScript.",
     description:
       "Julian Garnier's Hartwig-inspired chess set renders a full 3D board with CSS transforms and built-in move validation. The original project notes WebKit-focused browser support, so it is best treated as a desktop visual demo first and a cross-browser chess game second.",
@@ -245,7 +245,7 @@ const coreGames: Game[] = [
   {
     slug: "vaw",
     title: "Vaw",
-    coverImage: "/games/vaw/index.png",
+    coverImage: "/covers/vaw.png",
     shortDescription: "Godot-made demo imported from a local HTML5 export.",
     description:
       "Self-hosted Godot web export provided locally and integrated into the portal. This entry uses the runtime files from the supplied export folder and keeps the game splash image as its catalog cover.",
@@ -294,7 +294,7 @@ const coreGames: Game[] = [
   {
     slug: "tidal-town",
     title: "Tidal Town",
-    coverImage: "/covers/tidal-town.png",
+    coverImage: "/covers/tidaltown.gif",
     shortDescription: "City planning meets divine disaster in a bright tactical score-chaser.",
     description:
       "City planning meets divine disaster. Slide buildings into color groups to score points and calm Poseidon, who is absolutely not calm. This game is easy to learn, surprisingly tactical, and constantly evolving as waves reshape the board. Bright visuals, smooth play, and a playful take on managing chaos one house at a time.",
@@ -338,6 +338,22 @@ const coreGames: Game[] = [
     sourceUrl: "https://github.com/twitchdodge/twitchdodge",
     attribution: "twitchdodge and contributors",
     embedUrl: "/games/twitchdodge/index.html",
+  },
+  {
+    slug: "url-dinogame",
+    title: "URL Dino Game",
+    coverImage: "/covers/url-dinogame.gif",
+    shortDescription: "A browser dinosaur runner played entirely inside the address bar.",
+    description:
+      "A lightweight implementation of the classic dinosaur game, reimagined inside the browser's address bar. Dodge obstacles, collect pickups, and survive as long as possible in a playful desktop-first twist on the endless runner formula.",
+    categories: ["Arcade", "Action"],
+    tags: ["Runner", "High Score", "Desktop"],
+    featured: false,
+    mobile: false,
+    license: "Apache-2.0",
+    sourceUrl: "https://github.com/Neilblaze/URL-Dinogame",
+    attribution: "Neilblaze and contributors",
+    embedUrl: "/games/url-dinogame/index.html",
   },
 ];
 
