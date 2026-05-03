@@ -17,18 +17,6 @@
     "targetPath": "public/games/tower-building"
   },
   {
-    "slug": "super-tux",
-    "repoUrl": "https://github.com/drmmegahed/super-tux.git",
-    "targetPath": "public/games/super-tux",
-    "overlayPath": "external-game-overrides/super-tux"
-  },
-  {
-    "slug": "super-tux-html5",
-    "repoUrl": "https://github.com/metalx1000/Super-Tux-HTML5.git",
-    "targetPath": "public/games/super-tux-html5",
-    "overlayPath": "external-game-overrides/super-tux-html5"
-  },
-  {
     "slug": "tetris",
     "repoUrl": "https://github.com/jakesgordon/javascript-tetris.git",
     "targetPath": "public/games/tetris",
