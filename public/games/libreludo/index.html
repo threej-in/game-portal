@@ -3,6 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      if (window.location.pathname.endsWith("/index.html")) {
+        window.history.replaceState(
+          window.history.state,
+          "",
+          window.location.pathname.replace(/index\.html$/, "") + window.location.search + window.location.hash,
+        );
+      }
+    </script>
     <title>LibreLudo | Free and Open Source Ludo Game</title>
     <link rel="canonical" href="https://libreludo.org/" />
     <meta name="theme-color" content="#7C5FFF" />

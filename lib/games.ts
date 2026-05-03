@@ -321,7 +321,7 @@ const coreGames: Game[] = [
     license: "AGPL-3.0-only",
     sourceUrl: "https://github.com/priyanshurav/libreludo",
     attribution: "priyanshurav and contributors",
-    embedUrl: "/games/libreludo/index.html",
+    embedUrl: "/games/libreludo/",
   },
   {
     slug: "twitchdodge",
