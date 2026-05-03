@@ -210,7 +210,15 @@ WS.WebsocketServer = Server.extend({
             });
         }
 
-        this._ioServer = new socketio(this._httpServer);
+        if (typeof socketio === 'function') {
+            this._ioServer = socketio(this._httpServer);
+        } else if (socketio && typeof socketio.listen === 'function') {
+            this._ioServer = socketio.listen(this._httpServer);
+        } else if (socketio && typeof socketio.Server === 'function') {
+            this._ioServer = new socketio.Server(this._httpServer, { allowEIO3: true });
+        } else {
+            throw new Error('Unsupported socket.io export. Install socket.io@1.7.4 for BrowserQuest.');
+        }
         this._ioServer.on('connection', function webSocketListener(socket) {
             log.info('Client socket connected from ' + socket.conn.remoteAddress);
             // Add remoteAddress property
