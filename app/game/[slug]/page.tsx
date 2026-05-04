@@ -106,7 +106,7 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
           <a href={game.sourceUrl} className="btn btn-secondary" target="_blank" rel="noreferrer">
             {sourceLabel}
           </a>
-          <Link href="/games" className="btn btn-secondary">
+          <Link href="/" className="btn btn-secondary">
             Back to catalog
           </Link>
         </div>
