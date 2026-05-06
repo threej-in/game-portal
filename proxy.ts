@@ -8,6 +8,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname.includes(".html/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(/\.html\/+$/, ".html");
+    return NextResponse.redirect(url, 308);
+  }
+
   if (pathname.endsWith(".html")) {
     return NextResponse.rewrite(new URL(`/game-html-shell${pathname}`, request.url));
   }

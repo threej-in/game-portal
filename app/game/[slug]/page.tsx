@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllGames, getGameBySlug } from "@/lib/games";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://threej.in";
+
 type GameDetailsPageProps = {
   params: Promise<{
     slug: string;
@@ -65,9 +67,44 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
 
   const hasExternalSource = /^https?:\/\//i.test(game.sourceUrl);
   const sourceLabel = hasExternalSource ? "Source Repo" : "Project Link";
+  const relatedGames = getAllGames()
+    .filter(
+      (item) =>
+        item.slug !== game.slug &&
+        item.categories.some((category) => game.categories.includes(category)),
+    )
+    .slice(0, 8);
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    name: game.title,
+    description: game.description,
+    image: new URL(game.coverImage, siteUrl).toString(),
+    url: new URL(`/game/${game.slug}`, siteUrl).toString(),
+    applicationCategory: "Game",
+    gamePlatform: "Web browser",
+    genre: game.categories,
+    keywords: game.tags.join(", "),
+    license: game.license,
+    author: {
+      "@type": "Organization",
+      name: game.attribution,
+      url: hasExternalSource ? game.sourceUrl : undefined,
+    },
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
+  };
 
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <article className="card p-6">
         <div className="flex flex-wrap gap-2">
           {game.categories.map((category) => (
@@ -133,6 +170,19 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
           </div>
         </dl>
       </section>
+
+      {relatedGames.length > 0 ? (
+        <section className="mt-6 card p-6">
+          <h2 className="text-xl font-semibold text-slate-100">Related Games</h2>
+          <div className="mt-4 flex flex-wrap gap-3 text-sm">
+            {relatedGames.map((item) => (
+              <Link key={item.slug} href={`/game/${item.slug}`} className="chip hover:text-cyan-200">
+                {item.title}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

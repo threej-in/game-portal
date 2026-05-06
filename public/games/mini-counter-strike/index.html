@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mini Counter-Strike</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { overflow: hidden; background: #000; font-family: 'Segoe UI', Arial, sans-serif; overscroll-behavior: none; }
+  html { overscroll-behavior: none; }
+  canvas { display: block; }
+
+  /* Gameplay vignette */
+  #game-vignette {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+    opacity: 0.25; pointer-events: none;
+  }
+
+  #hud {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10;
+  }
+  #hud * { pointer-events: none; }
+
+  /* Crosshair — 4-line gap style */
+  #crosshair {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 0; height: 0;
+    user-select: none;
+    --ch-gap: 4px;
+    --ch-len: 10px;
+  }
+  #crosshair .ch-line {
+    position: absolute;
+    background: var(--ch-color, rgba(200, 255, 200, 0.9));
+    box-shadow: 0 0 2px rgba(0,0,0,0.8);
+    transition: width 0.15s ease-out, height 0.15s ease-out;
+  }
+  /* Top */
+  #crosshair .ch-top { width: 2px; height: var(--ch-len); left: -1px; bottom: var(--ch-gap); }
+  /* Bottom */
+  #crosshair .ch-bottom { width: 2px; height: var(--ch-len); left: -1px; top: var(--ch-gap); }
+  /* Left */
+  #crosshair .ch-left { width: var(--ch-len); height: 2px; top: -1px; right: var(--ch-gap); }
+  /* Right */
+  #crosshair .ch-right { width: var(--ch-len); height: 2px; top: -1px; left: var(--ch-gap); }
+
+  /* Health / Armor — bottom-left */
+  #health-bar {
+    position: absolute; bottom: 20px; left: 20px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .bar-row { display: flex; align-items: center; gap: 8px; }
+  .bar-label {
+    color: #fff; font-size: 13px; width: 16px; text-align: center;
+    text-shadow: 0 0 3px #000;
+  }
+  .bar-track {
+    width: 180px; height: 14px; background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 2px;
+  }
+  .bar-fill { height: 100%; border-radius: 1px; transition: width 0.2s; }
+  #hp-fill { background: linear-gradient(to right, #d32f2f, #f44336); width: 100%; }
+  #armor-fill { background: linear-gradient(to right, #1565c0, #42a5f5); width: 0%; }
+  .bar-value {
+    color: #fff; font-size: 13px; min-width: 30px;
+    text-shadow: 0 0 3px #000;
+  }
+
+  /* Ammo — bottom-right */
+  #ammo-display {
+    position: absolute; bottom: 20px; right: 20px;
+    color: #fff; font-size: 22px; text-shadow: 0 0 4px #000;
+  }
+  #ammo-display .weapon-name {
+    font-size: 12px; color: #aaa; text-align: right; margin-bottom: 2px;
+  }
+  #ammo-display .ammo-numbers { text-align: right; }
+  #ammo-display .ammo-mag { font-weight: bold; }
+  #ammo-display .ammo-sep { color: #888; margin: 0 2px; }
+  #ammo-display .ammo-reserve { color: #aaa; font-size: 16px; }
+
+  /* Grenade count — above ammo */
+  #grenade-count {
+    position: absolute; bottom: 60px; right: 20px;
+    color: #8bc34a; font-size: 14px;
+    text-shadow: 0 0 3px #000;
+    display: none;
+  }
+  #grenade-count.show { display: block; }
+
+  /* Money — top-right */
+  #money-display {
+    position: absolute; top: 16px; right: 20px;
+    color: #4caf50; font-size: 20px; font-weight: bold;
+    text-shadow: 0 0 4px #000;
+  }
+
+  /* Round timer — top-center */
+  #round-timer {
+    position: absolute; top: 16px; left: 50%;
+    transform: translateX(-50%);
+    color: #fff; font-size: 24px; font-weight: bold;
+    text-shadow: 0 0 4px #000;
+  }
+
+  /* Round info — below timer */
+  #round-info {
+    position: absolute; top: 48px; left: 50%;
+    transform: translateX(-50%);
+    color: #aaa; font-size: 13px;
+    text-shadow: 0 0 3px #000;
+  }
+  #buy-phase-hint {
+    position: absolute; top: 68px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.5); font-size: 11px;
+    text-shadow: 0 0 3px #000;
+    display: none; white-space: nowrap;
+  }
+
+  #boss-health-bar {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 320px;
+    display: none;
+    z-index: 60;
+    text-align: center;
+  }
+  #boss-health-bar.show { display: block; }
+  #boss-label {
+    color: #ff2222;
+    font: bold 14px monospace;
+    text-shadow: 0 0 6px rgba(255,0,0,0.5);
+    margin-bottom: 4px;
+    letter-spacing: 4px;
+  }
+  #boss-hp-track {
+    position: relative;
+    width: 100%;
+    height: 10px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  #boss-hp-fill {
+    height: 100%;
+    width: 100%;
+    background: #4caf50;
+    transition: width 0.2s, background 0.3s;
+  }
+  .boss-phase-divider {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: rgba(255,255,255,0.3);
+  }
+  .kill-entry.boss-kill .victim { color: #ff2222; font-weight: bold; }
+
+  /* Kill feed — top-right below money */
+  #kill-feed {
+    position: absolute; top: 50px; right: 20px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .kill-entry {
+    color: #fff; font-size: 13px; padding: 3px 8px;
+    background: rgba(0,0,0,0.5); border-radius: 3px;
+    text-shadow: 0 0 2px #000;
+    animation: fadeOut 3s forwards;
+    white-space: nowrap;
+  }
+  .kill-entry .killer { color: #4fc3f7; }
+  .kill-entry .victim { color: #ef5350; }
+  @keyframes fadeOut {
+    0%, 70% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  .radio-menu {
+    display: none;
+    position: fixed;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.75);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 12px 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #ccc;
+    z-index: 200;
+    pointer-events: none;
+    min-width: 180px;
+  }
+  .radio-menu.show { display: block; }
+  .radio-title {
+    color: #4caf50;
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+  .radio-option {
+    padding: 3px 0;
+    color: #aaa;
+    font-size: 13px;
+  }
+  .radio-entry {
+    color: #8bc34a;
+    font-size: 12px;
+    padding: 2px 6px;
+    animation: fadeOut 3s forwards;
+  }
+
+  /* Round announcement — center */
+  #announcement {
+    position: absolute; top: 40%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff; font-size: 42px; font-weight: bold;
+    text-shadow: 0 0 10px #000, 0 0 20px rgba(0,0,0,0.5);
+    opacity: 0; transition: opacity 0.3s;
+    text-align: center;
+  }
+  #announcement.show { opacity: 1; }
+  #announcement .sub {
+    font-size: 18px; color: #ccc; margin-top: 8px; font-weight: normal;
+  }
+  #boss-flash {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: white; opacity: 0; pointer-events: none;
+    z-index: 999; transition: opacity 0.5s ease-out;
+  }
+  #announcement.boss-eliminated {
+    color: #ffd700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 165, 0, 0.4);
+  }
+
+  /* Scoreboard — Tab hold */
+  #scoreboard {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85); border: 1px solid #555;
+    border-radius: 6px; padding: 24px 40px;
+    color: #fff; display: none; min-width: 320px;
+  }
+  #scoreboard.show { display: block; }
+  #scoreboard h2 { text-align: center; margin-bottom: 16px; font-size: 20px; }
+  .score-row {
+    display: flex; justify-content: space-between;
+    padding: 8px 0; font-size: 18px; border-bottom: 1px solid #333;
+  }
+  .score-row:last-child { border-bottom: none; }
+  .score-val { font-weight: bold; font-size: 28px; }
+  .score-player .score-val { color: #4fc3f7; }
+  .score-bots .score-val { color: #ef5350; }
+  #scoreboard .map-info {
+    text-align: center; margin-top: 12px; color: #aaa; font-size: 13px;
+  }
+
+  /* Bomb HUD */
+  #bomb-hud {
+    position: absolute; bottom: 120px; left: 50%;
+    transform: translateX(-50%);
+    text-align: center; z-index: 20;
+  }
+  #bomb-timer-display {
+    font-size: 28px; font-weight: bold; color: #ff4444;
+    text-shadow: 0 0 10px rgba(255,0,0,0.5);
+    margin-bottom: 4px; letter-spacing: 2px;
+  }
+  #bomb-action-hint {
+    font-size: 13px; color: rgba(255,255,255,0.7);
+    margin-bottom: 6px; letter-spacing: 1px;
+  }
+  #bomb-progress-wrap {
+    width: 200px; height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px; overflow: hidden;
+    display: none;
+  }
+  #bomb-progress-bar {
+    height: 100%; width: 0%;
+    background: #4fc3f7; border-radius: 3px;
+    transition: width 0.05s linear;
+  }
+  #bomb-progress-wrap.planting #bomb-progress-bar { background: #ff8800; }
+  #bomb-progress-wrap.defusing #bomb-progress-bar { background: #4fc3f7; }
+
+  /* Buy menu */
+  #buy-menu {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.9); border: 1px solid #666;
+    border-radius: 8px; padding: 24px 32px;
+    color: #fff; display: none; min-width: 340px;
+  }
+  #buy-menu.show { display: block; pointer-events: auto; }
+  #buy-menu h2 { text-align: center; margin-bottom: 16px; font-size: 20px; }
+  .buy-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; margin: 6px 0; border-radius: 4px;
+    cursor: pointer; transition: background 0.15s;
+    background: rgba(255,255,255,0.05);
+  }
+  .buy-item:hover { background: rgba(255,255,255,0.15); }
+  .buy-item.owned { opacity: 0.4; cursor: default; }
+  .buy-item.too-expensive { opacity: 0.4; cursor: default; }
+  .buy-item .item-name { font-size: 16px; }
+  .buy-item .item-key { color: #888; font-size: 12px; margin-left: 8px; }
+  .buy-item .item-price { color: #4caf50; font-size: 15px; }
+  .buy-item .item-price.free { color: #aaa; }
+  #buy-menu .buy-balance {
+    text-align: center; margin-top: 12px; color: #4caf50; font-size: 14px;
+  }
+  #buy-menu .buy-hint {
+    text-align: center; margin-top: 8px; color: #666; font-size: 12px;
+  }
+
+  /* Menu screen */
+  #menu-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: transparent;
+    display: flex; flex-direction: column; align-items: center; justify-content: safe center;
+    z-index: 20; color: #fff; overflow-y: auto;
+  }
+  #menu-screen.hidden { display: none; }
+
+  /* Dark overlay for text readability over 3D background */
+  #menu-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; overflow: hidden;
+    background: rgba(0,0,0,0.3);
+  }
+  #menu-bg::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: none;
+    z-index: 1; pointer-events: none;
+  }
+  /* Vignette */
+  #menu-bg::after {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+    z-index: 2; pointer-events: none;
+  }
+
+  /* Floating dust particles — disabled (3D background replaces them) */
+  .menu-particle { display: none; }
+
+  /* Horizontal moving light sweep — disabled (3D background replaces it) */
+  #menu-sweep { display: none; }
+
+  /* Menu content wrapper */
+  #menu-content {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column; align-items: center;
+    animation: menuFadeIn 1.2s ease-out;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 12px 40px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(10,15,25,0.5) 0%, rgba(10,15,25,0.3) 100%);
+  }
+  @keyframes menuFadeIn {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  #menu-content.fade-out {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  /* Crosshair emblem above title */
+  #menu-emblem {
+    width: 40px; height: 40px; position: relative; margin-bottom: 10px; opacity: 0.6;
+  }
+  #menu-emblem .emblem-h { position: absolute; top: 50%; left: 10%; width: 80%; height: 1px; background: #4fc3f7; transform: translateY(-50%); }
+  #menu-emblem .emblem-v { position: absolute; left: 50%; top: 10%; height: 80%; width: 1px; background: #4fc3f7; transform: translateX(-50%); }
+  #menu-emblem .emblem-ring {
+    position: absolute; top: 50%; left: 50%; width: 30px; height: 30px;
+    border: 1px solid rgba(79,195,247,0.5); border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  #menu-emblem .emblem-dot {
+    position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+    background: #4fc3f7; border-radius: 50%; transform: translate(-50%, -50%);
+  }
+
+  /* Title */
+  #menu-screen h1 {
+    font-size: 52px; margin-bottom: 0; letter-spacing: 10px; font-weight: 900;
+    text-shadow: 0 0 40px rgba(79,195,247,0.4), 0 0 80px rgba(79,195,247,0.15), 0 2px 0 rgba(0,0,0,0.8);
+    background: linear-gradient(180deg, #ffffff 0%, #a0c4d8 50%, #6a8fa8 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: titleGlow 3s ease-in-out infinite alternate;
+  }
+  @keyframes titleGlow {
+    0% { filter: brightness(1) drop-shadow(0 0 20px rgba(79,195,247,0.3)); }
+    100% { filter: brightness(1.15) drop-shadow(0 0 40px rgba(79,195,247,0.5)); }
+  }
+
+  /* Subtitle with line accents */
+  #menu-screen .subtitle-wrap {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 8px; margin-top: 4px;
+  }
+  #menu-screen .subtitle-line {
+    width: 60px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(79,195,247,0.5), transparent);
+  }
+  #menu-screen .subtitle {
+    color: rgba(79,195,247,0.6); font-size: 13px; letter-spacing: 6px;
+    text-transform: uppercase; margin-bottom: 0;
+  }
+
+  /* Version tag */
+  #menu-version {
+    position: absolute; bottom: 16px; right: 20px;
+    color: rgba(255,255,255,0.12); font-size: 11px; letter-spacing: 1px; z-index: 10;
+  }
+
+  /* ── Mode Card Grid ───────────────────────────────── */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    max-width: 480px;
+    width: 100%;
+    margin-top: 14px;
+    transition: all 0.3s ease;
+  }
+
+  .mode-card {
+    position: relative;
+    padding: 18px 20px;
+    background: rgba(10,15,25,0.7);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .mode-card::before {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(79,195,247,0.08), transparent);
+    transition: left 0.5s;
+  }
+  .mode-card:hover::before { left: 100%; }
+  .mode-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.25);
+    transform: translateY(-2px);
+  }
+  .mode-card.primary {
+    border-color: rgba(79,195,247,0.4);
+  }
+  .mode-card.primary:hover {
+    border-color: rgba(79,195,247,0.7);
+    box-shadow: 0 0 20px rgba(79,195,247,0.15);
+  }
+
+  .mode-card .mode-name {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .mode-card.primary .mode-name {
+    color: #4fc3f7;
+  }
+  .mode-card .mode-desc {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1px;
+  }
+
+  /* ── Mode Grid: Expanded State ────────────────────── */
+  .mode-grid.expanded {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .mode-grid.expanded .mode-card {
+    display: none;
+  }
+  .mode-grid.expanded .mode-card.active {
+    display: block;
+    cursor: default;
+    transform: none;
+    border-color: rgba(79,195,247,0.4);
+    padding: 16px 24px;
+  }
+  .mode-grid.expanded .mode-card.active:hover {
+    transform: none;
+  }
+  .mode-grid.expanded .mode-card.active::before {
+    display: none;
+  }
+
+  /* Expanded card config area */
+  .mode-config {
+    display: none;
+    margin-top: 12px;
+    text-align: left;
+  }
+  .mode-card.active .mode-config {
+    display: block;
+  }
+
+  .config-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 5px;
+    margin-top: 10px;
+  }
+  .config-label:first-child {
+    margin-top: 0;
+  }
+
+  /* Difficulty buttons inside expanded card */
+  .config-diff-row {
+    display: flex;
+    gap: 6px;
+  }
+  .config-diff-btn {
+    padding: 6px 16px;
+    font-size: 11px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.5);
+    border-radius: 2px;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    font-family: inherit;
+  }
+  .config-diff-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.8);
+  }
+  .config-diff-btn.selected {
+    background: rgba(79,195,247,0.15);
+    border-color: #4fc3f7;
+    color: #4fc3f7;
+  }
+  .config-side-ct.selected {
+    background: rgba(79,147,247,0.2);
+    border-color: #4f93f7;
+    color: #4f93f7;
+  }
+  .config-side-t.selected {
+    background: rgba(200,160,80,0.2);
+    border-color: #c8a050;
+    color: #c8a050;
+  }
+  .team-size-hint {
+    font-size: 9px;
+    opacity: 0.6;
+    letter-spacing: 1px;
+  }
+
+  /* Map buttons inside expanded card */
+  .config-map-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .config-map-btn {
+    padding: 6px 14px;
+    font-size: 11px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.5);
+    border-radius: 2px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .config-map-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.8);
+  }
+  .config-map-btn.selected {
+    background: rgba(79,195,247,0.15);
+    border-color: #4fc3f7;
+    color: #4fc3f7;
+  }
+  .config-map-grid.shuffle-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    position: relative;
+  }
+  .config-map-grid.shuffle-disabled .config-map-btn {
+    cursor: default;
+  }
+  .map-shuffle-caption {
+    display: none;
+    color: #aaa;
+    font: 11px monospace;
+    text-align: center;
+    margin: 4px 0 8px 0;
+    letter-spacing: 1px;
+  }
+  .config-map-grid.shuffle-disabled + .map-shuffle-caption {
+    display: block;
+  }
+
+  /* Start button inside expanded card */
+  .mode-start-btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background: rgba(79,195,247,0.1);
+    border: 1px solid rgba(79,195,247,0.5);
+    color: #4fc3f7;
+    border-radius: 2px;
+    letter-spacing: 4px;
+    font-weight: 600;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    font-family: inherit;
+  }
+  .mode-start-btn:hover {
+    background: rgba(79,195,247,0.2);
+    border-color: #4fc3f7;
+    box-shadow: 0 0 20px rgba(79,195,247,0.2);
+  }
+  .boss-fight-btn {
+    background: rgba(183,28,28,0.15);
+    border-color: rgba(229,57,53,0.6);
+    color: #ef5350;
+  }
+  .boss-fight-btn:hover {
+    background: rgba(183,28,28,0.3);
+    border-color: #ef5350;
+    box-shadow: 0 0 20px rgba(229,57,53,0.3);
+  }
+
+  /* Back link */
+  .mode-back {
+    display: none;
+    margin-top: 8px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+  .mode-back:hover {
+    color: rgba(255,255,255,0.6);
+  }
+  .mode-grid.expanded ~ .mode-back {
+    display: block;
+  }
+
+  /* ── Menu Footer Links ────────────────────────────── */
+  .menu-footer {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+  }
+  .menu-footer-btn {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    transition: color 0.2s;
+    font-family: inherit;
+    border-bottom: 1px solid transparent;
+  }
+  .menu-footer-btn:hover {
+    color: rgba(255,255,255,0.5);
+    border-bottom-color: rgba(255,255,255,0.2);
+  }
+
+  /* ── Controls Overlay ─────────────────────────────── */
+  #controls-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 210; color: #fff;
+  }
+  #controls-overlay.show { display: flex; }
+  #controls-overlay h2 {
+    font-size: 20px; letter-spacing: 4px; margin-bottom: 24px;
+    color: rgba(255,255,255,0.7);
+  }
+  .controls-categories {
+    display: flex; gap: 40px;
+  }
+  .controls-cat-header {
+    font-size: 13px; letter-spacing: 3px; text-transform: uppercase;
+    color: rgba(79,195,247,0.7); margin: 0 0 12px 0; font-weight: 600;
+  }
+  #controls-overlay .controls-grid {
+    display: grid; grid-template-columns: auto; gap: 8px;
+  }
+  #controls-overlay .ctrl-item {
+    display: flex; align-items: center; gap: 8px; font-size: 13px;
+    color: rgba(255,255,255,0.45);
+  }
+  #controls-overlay .ctrl-key {
+    display: inline-block; padding: 3px 10px; border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 3px; font-size: 12px; color: rgba(79,195,247,0.7);
+    background: rgba(255,255,255,0.05); font-family: monospace; min-width: 32px;
+    text-align: center;
+  }
+  .overlay-close {
+    margin-top: 24px; padding: 8px 32px; font-size: 12px; cursor: pointer;
+    background: transparent; border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.4); border-radius: 2px; letter-spacing: 2px;
+    transition: all 0.2s; text-transform: uppercase; font-family: inherit;
+  }
+  .overlay-close:hover {
+    border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.7);
+  }
+
+  /* ── Loadout Overlay ──────────────────────────────── */
+  #loadout-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 30; color: #fff;
+  }
+  #loadout-overlay.show { display: flex; }
+  #loadout-overlay h2 { font-size: 20px; letter-spacing: 4px; margin-bottom: 16px; color: rgba(255,255,255,0.7); }
+  .loadout-weapons { display: flex; gap: 12px; margin-bottom: 16px; }
+  .loadout-weapon-btn {
+    padding: 6px 16px; font-size: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.5); border-radius: 2px; font-family: inherit;
+    text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s;
+  }
+  .loadout-weapon-btn.active { border-color: rgba(79,195,247,0.6); color: rgba(79,195,247,0.9); }
+  .loadout-skins { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 500px; }
+  .skin-card {
+    padding: 10px 16px; font-size: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.5); border-radius: 3px; min-width: 80px;
+    text-align: center; transition: all 0.2s; font-family: inherit;
+  }
+  .skin-card:hover { border-color: rgba(255,255,255,0.3); }
+  .skin-card.equipped { border-color: rgba(79,195,247,0.7); color: rgba(79,195,247,0.9); }
+  .skin-card.locked { opacity: 0.35; cursor: default; }
+  .skin-card .skin-xp { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 4px; }
+
+  /* ── Missions Overlay ─────────────────────────────── */
+  #missions-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 30; color: #fff;
+  }
+  #missions-overlay.show { display: flex; }
+  #missions-overlay h2 {
+    font-size: 20px; letter-spacing: 4px; margin-bottom: 16px;
+    color: rgba(255,255,255,0.7);
+  }
+  #missions-overlay .missions-content {
+    max-width: 480px; width: 100%;
+  }
+
+  /* ── Shared end-of-match summary scorecard ─────────────── */
+  .summary-wrap {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 25; color: #fff;
+  }
+  .summary-wrap.show { display: flex; }
+  .summary-inner {
+    width: 100%; max-width: 560px; padding: 0 20px;
+  }
+  .summary-hero { text-align: center; margin-bottom: 20px; }
+  .summary-result {
+    font-size: 44px; font-weight: 900; letter-spacing: 8px;
+    line-height: 1; margin-bottom: 10px;
+  }
+  .summary-result.win    { color: #4caf50; text-shadow: 0 0 20px rgba(76,175,80,0.25); }
+  .summary-result.loss   { color: #ef5350; text-shadow: 0 0 20px rgba(239,83,80,0.25); }
+  .summary-result.draw   { color: #fff; }
+  .summary-result.neutral { color: #9e9e9e; }
+  .summary-result.elim   { color: #ef5350; text-shadow: 0 0 20px rgba(239,83,80,0.25); }
+  .summary-result.progress { color: #ff9800; text-shadow: 0 0 20px rgba(255,152,0,0.25); }
+  .summary-result.amber  { color: #ffca28; text-shadow: 0 0 20px rgba(255,202,40,0.2); }
+  .summary-score {
+    font-size: 22px; color: rgba(255,255,255,0.65);
+    letter-spacing: 3px; margin-bottom: 4px;
+  }
+  .summary-meta {
+    font-size: 11px; color: rgba(255,255,255,0.35);
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+
+  .summary-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    margin-bottom: 22px;
+  }
+  .summary-stat {
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 5px; padding: 16px 8px 12px; text-align: center;
+  }
+  .summary-num {
+    font-size: 30px; font-weight: 700; color: #fff; line-height: 1;
+  }
+  .summary-num .summary-sub {
+    font-size: 15px; color: rgba(255,255,255,0.35); font-weight: 500;
+  }
+  .summary-num .summary-unit {
+    font-size: 16px; color: rgba(255,255,255,0.4); margin-left: 1px;
+  }
+  .summary-lbl {
+    font-size: 10px; color: rgba(255,255,255,0.4);
+    letter-spacing: 2px; text-transform: uppercase; margin-top: 8px;
+  }
+
+  .summary-xp {
+    background: rgba(79,195,247,0.06);
+    border: 1px solid rgba(79,195,247,0.2);
+    border-radius: 5px; padding: 14px 16px; margin-bottom: 22px;
+  }
+  .summary-xp-top {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .summary-xp-earned {
+    font-size: 22px; font-weight: 800; color: #4fc3f7; letter-spacing: 1px;
+  }
+  .summary-xp-rank {
+    font-size: 11px; color: rgba(255,255,255,0.45);
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .summary-xp-bar {
+    height: 5px; background: rgba(255,255,255,0.08);
+    border-radius: 3px; overflow: hidden; margin-bottom: 10px;
+  }
+  .summary-xp-fill {
+    height: 100%; background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+  }
+  .summary-xp-break {
+    display: flex; flex-wrap: wrap; gap: 4px 10px;
+    font-size: 11px; color: rgba(255,255,255,0.55);
+  }
+  .summary-xp-break span b { color: #fff; font-weight: 600; }
+  .summary-xp-rankup {
+    color: #ffca28; font-weight: 700; letter-spacing: 2px;
+    margin-top: 6px; font-size: 12px; text-transform: uppercase;
+  }
+
+  .summary-btns { display: flex; gap: 12px; justify-content: center; }
+  .summary-btn {
+    padding: 11px 34px; font-size: 13px; letter-spacing: 3px;
+    text-transform: uppercase; border-radius: 3px; font-weight: 600;
+    cursor: pointer; border: 2px solid; font-family: inherit;
+    transition: all 0.2s;
+  }
+  .summary-btn-primary {
+    background: rgba(79,195,247,0.2); border-color: #4fc3f7; color: #4fc3f7;
+  }
+  .summary-btn-primary:hover { background: rgba(79,195,247,0.4); }
+  .summary-btn-secondary {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.65);
+  }
+  .summary-btn-secondary:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+  @media (max-width: 480px) {
+    .summary-stats { grid-template-columns: repeat(2, 1fr); }
+    .summary-result { font-size: 32px; letter-spacing: 5px; }
+    .summary-num { font-size: 24px; }
+  }
+
+  .menu-btn {
+    padding: 12px 40px; font-size: 16px; cursor: pointer;
+    border-radius: 4px; letter-spacing: 2px;
+    transition: all 0.2s; font-family: inherit;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.3); color: #aaa;
+  }
+  .menu-btn:hover {
+    background: rgba(255,255,255,0.15); color: #fff;
+  }
+
+  /* History panel */
+  #history-panel {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(8,12,18,0.97);
+    display: none; flex-direction: column; align-items: center;
+    z-index: 30; color: #fff; overflow-y: auto;
+    padding: 40px 20px;
+  }
+  #history-panel.show { display: flex; }
+  #history-panel h2 {
+    font-size: 28px; letter-spacing: 6px; margin-bottom: 24px;
+    color: rgba(255,255,255,0.8);
+  }
+  .history-list {
+    max-width: 560px; width: 100%;
+    display: flex; flex-direction: column; gap: 6px;
+    max-height: 50vh; overflow-y: auto;
+  }
+  .history-entry {
+    display: grid;
+    grid-template-columns: 4px 90px 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 11px 14px 11px 0;
+    background: rgba(255,255,255,0.035);
+    border-radius: 4px; font-size: 13px; overflow: hidden;
+    flex-shrink: 0;
+  }
+  .history-entry .he-bar { align-self: stretch; }
+  .history-entry.win   .he-bar { background: #4caf50; }
+  .history-entry.loss  .he-bar { background: #ef5350; }
+  .history-entry.draw  .he-bar { background: #9e9e9e; }
+  .history-entry .he-head { display: flex; flex-direction: column; gap: 2px; }
+  .history-entry .he-result {
+    font-weight: 700; letter-spacing: 2px; font-size: 12px;
+  }
+  .history-entry.win   .he-result { color: #66bb6a; }
+  .history-entry.loss  .he-result { color: #ef5350; }
+  .history-entry.draw  .he-result { color: #bdbdbd; }
+  .history-entry .he-score-small {
+    font-size: 13px; color: #fff; font-weight: 600; letter-spacing: 1px;
+  }
+  .history-entry .he-mid { color: rgba(255,255,255,0.65); }
+  .history-entry .he-mid b { color: #fff; font-weight: 600; }
+  .history-entry .he-right {
+    text-align: right; color: rgba(255,255,255,0.35); font-size: 11px;
+    letter-spacing: 1px; display: flex; flex-direction: column; gap: 2px; align-items: flex-end;
+  }
+  .history-entry .he-diff {
+    font-size: 10px; color: rgba(79,195,247,0.65);
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .history-close {
+    margin-top: 28px; padding: 10px 40px; font-size: 14px; cursor: pointer;
+    background: transparent; border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.5); border-radius: 2px; letter-spacing: 2px;
+    transition: all 0.3s; text-transform: uppercase;
+  }
+  .history-close:hover {
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.8);
+  }
+  .history-empty {
+    color: rgba(255,255,255,0.25); font-size: 14px; margin-top: 20px;
+  }
+
+  /* Tour: Map Selection Panel */
+  #tour-panel {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.92);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 30; color: #fff; overflow-y: auto; padding: 20px 0;
+  }
+  #tour-panel.show { display: flex; }
+  #tour-panel h2 {
+    font-size: 28px; letter-spacing: 6px; margin-bottom: 32px;
+    color: rgba(79,195,247,0.8);
+  }
+  .tour-maps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 600px; width: 90vw; }
+  .tour-map-btn {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 14px 18px; cursor: pointer;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px; text-align: left; transition: all 0.25s;
+  }
+  .tour-map-btn:hover {
+    background: rgba(79,195,247,0.1); border-color: rgba(79,195,247,0.5);
+    transform: scale(1.02);
+  }
+  .tour-map-name {
+    font-size: 18px; font-weight: 600; color: #fff; letter-spacing: 2px;
+  }
+  .tour-map-desc {
+    font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.4;
+  }
+  @media (max-width: 480px) {
+    .tour-maps { grid-template-columns: 1fr; }
+    #tour-panel h2 { font-size: 20px; margin-bottom: 18px; }
+    .tour-map-name { font-size: 15px; }
+    .tour-map-desc { font-size: 11px; }
+    .tour-map-btn { padding: 10px 14px; }
+  }
+
+  /* Tour: Exit Button */
+  #tour-exit-btn {
+    position: fixed; top: 20px; right: 20px; z-index: 15;
+    padding: 10px 24px; font-size: 14px; cursor: pointer;
+    background: rgba(239,83,80,0.15); border: 1px solid rgba(239,83,80,0.6);
+    color: #ef5350; border-radius: 3px; letter-spacing: 3px; font-weight: 600;
+    transition: all 0.3s; display: none; pointer-events: all;
+  }
+  #tour-exit-btn:hover {
+    background: rgba(239,83,80,0.3); border-color: #ef5350;
+    box-shadow: 0 0 20px rgba(239,83,80,0.2);
+  }
+
+  /* Tour: hide most HUD elements */
+  #hud.tour-mode #health-bar,
+  #hud.tour-mode #ammo-display,
+  #hud.tour-mode #money-display,
+  #hud.tour-mode #round-timer,
+  #hud.tour-mode #round-info,
+  #hud.tour-mode #scoreboard,
+  #hud.tour-mode #buy-menu,
+  #hud.tour-mode #grenade-count { display: none !important; }
+
+  /* Tour: Map label */
+  #tour-map-label {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 15;
+    color: rgba(255,255,255,0.5); font-size: 14px; letter-spacing: 3px;
+    text-transform: uppercase; pointer-events: none; display: none;
+    text-shadow: 0 0 8px rgba(0,0,0,0.8);
+  }
+
+  /* Pause overlay */
+  #pause-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 200;
+    background: rgba(0,0,0,0.7); display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+  }
+  #pause-overlay.show { display: flex; }
+  #pause-overlay h1 {
+    font-size: 48px; letter-spacing: 8px; color: #fff;
+    text-transform: uppercase; margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(79,195,247,0.5);
+  }
+  #pause-overlay .pause-hint {
+    color: rgba(255,255,255,0.4); font-size: 14px; letter-spacing: 2px; margin-bottom: 24px;
+  }
+  #pause-overlay button {
+    width: 220px; padding: 12px 0; font-size: 14px; cursor: pointer;
+    background: transparent; border: 1px solid rgba(79,195,247,0.5);
+    color: #4fc3f7; border-radius: 3px; letter-spacing: 3px;
+    text-transform: uppercase; font-weight: 600; transition: all 0.25s;
+    font-family: inherit; text-align: center; box-sizing: border-box;
+  }
+  #pause-overlay button:hover {
+    background: rgba(79,195,247,0.15); border-color: #4fc3f7;
+    box-shadow: 0 0 15px rgba(79,195,247,0.2);
+  }
+  #pause-controls-btn, #pause-menu-btn {
+    margin-top: 12px;
+  }
+
+  /* Pause hint (desktop only) */
+  #pause-hint-key {
+    position: fixed; bottom: 12px; right: 16px;
+    color: rgba(79,195,247,0.35); font-size: 12px; letter-spacing: 1px;
+    pointer-events: none; z-index: 10; display: none;
+    font-family: inherit;
+  }
+  @media (pointer: coarse) {
+    #pause-hint-key { display: none !important; }
+  }
+
+  /* Rank display on menu */
+  .rank-display {
+    margin-top: 6px; text-align: center;
+  }
+  .rank-badge {
+    display: inline-block; padding: 4px 14px; border-radius: 3px;
+    font-size: 12px; letter-spacing: 2px; font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .rank-xp-bar {
+    width: 160px; height: 4px; background: rgba(255,255,255,0.1);
+    border-radius: 2px; margin: 6px auto 0; overflow: hidden;
+  }
+  .rank-xp-fill {
+    height: 100%; border-radius: 2px; transition: width 0.3s;
+    background: linear-gradient(90deg, #4fc3f7, #81d4fa);
+  }
+  .rank-xp-text {
+    font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 2px; letter-spacing: 1px;
+  }
+
+  /* Quick Play button */
+  .quick-play-btn {
+    margin: 10px 0 4px;
+    padding: 10px 48px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(135deg, rgba(79,195,247,0.25) 0%, rgba(79,195,247,0.1) 100%);
+    border: 2px solid rgba(79,195,247,0.6);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: quickPlayPulse 2s ease-in-out infinite;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .quick-play-btn:hover {
+    background: linear-gradient(135deg, rgba(79,195,247,0.4) 0%, rgba(79,195,247,0.2) 100%);
+    border-color: rgba(79,195,247,0.9);
+    box-shadow: 0 0 20px rgba(79,195,247,0.4), inset 0 0 20px rgba(79,195,247,0.1);
+    transform: scale(1.03);
+  }
+  @keyframes quickPlayPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(79,195,247,0.2); }
+    50% { box-shadow: 0 0 16px rgba(79,195,247,0.4), 0 0 30px rgba(79,195,247,0.15); }
+  }
+  .quick-play-info {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  /* Hitmarker */
+  #hitmarker {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px; height: 20px; opacity: 0; pointer-events: none;
+    transition: opacity 0.1s;
+  }
+  #hitmarker.show { opacity: 1; }
+  #hitmarker.headshot .hm-line { background: #ffeb3b; box-shadow: 0 0 4px #ffeb3b; }
+  .hm-line {
+    position: absolute; background: #fff; box-shadow: 0 0 2px rgba(0,0,0,0.8);
+  }
+  .hm-line:nth-child(1) { width: 2px; height: 10px; top: 0; left: 50%; transform: translateX(-50%) rotate(45deg); }
+  .hm-line:nth-child(2) { width: 2px; height: 10px; bottom: 0; left: 50%; transform: translateX(-50%) rotate(45deg); }
+  .hm-line:nth-child(3) { width: 2px; height: 10px; top: 0; right: 2px; transform: rotate(-45deg); }
+  .hm-line:nth-child(4) { width: 2px; height: 10px; bottom: 0; right: 2px; transform: rotate(-45deg); }
+
+  /* Damage numbers */
+  .dmg-number {
+    position: absolute; font-size: 16px; font-weight: bold;
+    pointer-events: none; z-index: 12;
+    text-shadow: 0 0 3px #000, 0 1px 2px #000;
+    animation: dmgFloat 0.8s ease-out forwards;
+  }
+  .dmg-number.body { color: #ff5252; }
+  .dmg-number.headshot { color: #ffeb3b; font-size: 20px; }
+  @keyframes dmgFloat {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    60% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
+  }
+
+  /* Directional damage indicator arcs */
+  .damage-arc {
+    position: absolute; top: 50%; left: 50%;
+    width: 80px; height: 120px;
+    margin-left: -40px; margin-top: -180px;
+    background: radial-gradient(ellipse at center bottom, rgba(255,0,0,0.7) 0%, transparent 70%);
+    transform-origin: center 220px;
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  /* Kill streak announcement */
+  #streak-announce {
+    position: absolute; top: 28%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px; font-weight: 900; letter-spacing: 4px;
+    text-transform: uppercase; opacity: 0; pointer-events: none;
+    text-shadow: 0 0 20px rgba(255,200,0,0.6), 0 0 40px rgba(255,150,0,0.3);
+    color: #ffca28; transition: opacity 0.2s;
+  }
+  #streak-announce.show { opacity: 1; }
+
+  /* Minimap */
+  #minimap {
+    position: absolute; top: 12px; left: 12px;
+    width: 180px; height: 180px;
+    border-radius: 50%; overflow: hidden;
+    background: rgba(0,0,0,0.5);
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
+
+  /* Crouch indicator */
+  #crouch-indicator {
+    position: absolute; bottom: 58px; left: 20px;
+    color: rgba(200,255,200,0.7); font-size: 11px; letter-spacing: 2px;
+    text-shadow: 0 0 3px #000; display: none;
+  }
+  #crouch-indicator.show { display: block; }
+
+  /* Wave counter (survival) */
+  #wave-counter {
+    position: absolute; top: 48px; left: 50%;
+    transform: translateX(-50%);
+    color: #ffca28; font-size: 16px; font-weight: bold;
+    text-shadow: 0 0 4px #000; display: none;
+    letter-spacing: 2px;
+  }
+  #wave-counter.show { display: block; }
+
+  .rankup-flash {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, rgba(255,200,0,0.3) 0%, transparent 70%);
+    z-index: 26; pointer-events: none; opacity: 0;
+    animation: rankFlash 1.5s ease-out forwards;
+  }
+  @keyframes rankFlash {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Low health heartbeat pulse */
+  #low-health-pulse {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(255,0,0,0.35) 100%);
+    pointer-events: none; display: none;
+    animation: healthPulse 1s ease-in-out infinite;
+  }
+  #low-health-pulse.critical {
+    animation-duration: 0.7s;
+  }
+  @keyframes healthPulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── Mission Panel ─────────────────────────────────────── */
+  .mission-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .mission-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+  }
+  .mission-card:hover {
+    background: rgba(79,195,247,0.05);
+    border-color: rgba(79,195,247,0.3);
+  }
+  .mission-card.completed {
+    opacity: 0.5;
+    background: rgba(76,175,80,0.05);
+    border-color: rgba(76,175,80,0.3);
+  }
+  .mission-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    flex: 1;
+  }
+  .mission-card.completed .mission-desc {
+    text-decoration: line-through;
+  }
+  .mission-progress {
+    font-size: 12px;
+    color: rgba(79,195,247,0.8);
+    margin-left: 12px;
+    min-width: 50px;
+    text-align: right;
+  }
+  .mission-reward {
+    font-size: 11px;
+    color: rgba(255,202,40,0.8);
+    margin-left: 8px;
+    min-width: 50px;
+    text-align: right;
+  }
+  .mission-card.completed .mission-reward {
+    color: rgba(76,175,80,0.8);
+  }
+
+  /* ── Perk Selection Screen ─────────────────────────────── */
+  #perk-screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.92);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 25;
+    color: #fff;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+  }
+  #perk-screen.show { display: flex; }
+  #perk-screen h1 {
+    font-size: 36px;
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+    color: #4fc3f7;
+  }
+  .perk-subtitle {
+    font-size: 14px;
+    color: #aaa;
+    margin-bottom: 32px;
+  }
+  .perk-grid {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    max-width: 900px;
+  }
+  .perk-card {
+    width: 220px;
+    min-height: 180px;
+    padding: 24px;
+    background: rgba(255,255,255,0.04);
+    border: 2px solid rgba(79,195,247,0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .perk-card:hover {
+    background: rgba(79,195,247,0.1);
+    border-color: #4fc3f7;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(79,195,247,0.2);
+  }
+  .perk-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  .perk-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #4fc3f7;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .perk-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.4;
+  }
+  .perk-hint {
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    margin-top: 24px;
+    letter-spacing: 2px;
+  }
+
+  /* ── Active Perks HUD ──────────────────────────────────── */
+  #active-perks {
+    position: absolute;
+    top: 210px;
+    left: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    pointer-events: none;
+  }
+  .active-perk {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(79,195,247,0.4);
+    border-radius: 3px;
+    font-size: 10px;
+    color: rgba(79,195,247,0.9);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+  }
+  .active-perk-icon {
+    font-size: 13px;
+  }
+
+  /* Gun Game level HUD indicator */
+  #gungame-level {
+    position: absolute; top: 48px; left: 50%;
+    transform: translateX(-50%);
+    color: #ff9800; font-size: 16px; font-weight: bold;
+    text-shadow: 0 0 4px #000; display: none;
+    letter-spacing: 2px;
+  }
+  #gungame-level.show { display: block; }
+
+  /* Deathmatch kill counter HUD */
+  #dm-kill-counter {
+    position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+    font-size: 18px; font-weight: bold; color: #f44336;
+    text-shadow: 0 0 6px rgba(244,67,54,0.5);
+    display: none; z-index: 10; letter-spacing: 2px;
+  }
+
+  /* Deathmatch respawn timer */
+  #dm-respawn-timer {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 48px; font-weight: bold; color: rgba(255,255,255,0.7);
+    text-shadow: 0 0 20px rgba(0,0,0,0.8);
+    display: none; z-index: 15; letter-spacing: 4px;
+  }
+
+  /* ── Scope Overlay ──────────────────────────────────────── */
+  #scope-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; display: none; z-index: 11;
+  }
+  #scope-overlay.show { display: block; }
+  #scope-overlay .scope-vignette {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at center, transparent 28%, rgba(0,0,0,0.4) 32%, rgba(0,0,0,1) 34%);
+  }
+  #scope-overlay .scope-h {
+    position: absolute; top: 50%; left: 0; width: 100%; height: 1px;
+    background: rgba(0,0,0,0.8); transform: translateY(-50%);
+  }
+  #scope-overlay .scope-v {
+    position: absolute; left: 50%; top: 0; height: 100%; width: 1px;
+    background: rgba(0,0,0,0.8); transform: translateX(-50%);
+  }
+  #scope-overlay .scope-dot {
+    position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+    background: #000; border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* ── Orientation overlay (mobile portrait guard) ───────── */
+  #orient-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95); color: #fff; z-index: 9999;
+    display: none; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif;
+  }
+  #orient-phone-icon {
+    width: 40px; height: 64px; margin: 0 auto 16px;
+    border: 3px solid rgba(255,255,255,0.7); border-radius: 6px;
+    position: relative;
+    animation: orient-rotate 2s ease-in-out infinite;
+  }
+  #orient-phone-icon::after {
+    content: ''; position: absolute; bottom: 6px; left: 50%;
+    transform: translateX(-50%); width: 12px; height: 2px;
+    background: rgba(255,255,255,0.5); border-radius: 1px;
+  }
+  @keyframes orient-rotate {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+  }
+  #touch-move-zone {
+    position: fixed; bottom: 0; left: 0; width: 45%; height: 65%;
+    z-index: 100; touch-action: none;
+  }
+  #touch-joystick {
+    position: fixed; width: 180px; height: 180px;
+    border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.04); z-index: 101;
+    pointer-events: none;
+  }
+  #touch-joystick-thumb {
+    position: absolute; top: 50%; left: 50%;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    transform: translate(-50%, -50%);
+  }
+  #touch-look-zone {
+    position: fixed; bottom: 0; right: 0; width: 55%; height: 65%;
+    z-index: 100; touch-action: none;
+  }
+  #touch-action-buttons {
+    position: fixed; bottom: 56px; right: 14px; z-index: 102;
+    display: flex; flex-direction: column; gap: 10px; align-items: center;
+  }
+  .touch-btn {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5);
+    color: rgba(255,255,255,0.5); font-size: 18px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none; user-select: none;
+  }
+  .touch-btn:active { border-color: rgba(255,255,255,0.5); background: rgba(0,0,0,0.3); }
+  #touch-reload { border-color: rgba(255,200,0,0.35); color: rgba(255,200,0,0.6); }
+  #touch-fire {
+    position: fixed; bottom: 90px; right: 80px; z-index: 102;
+    width: 90px; height: 90px; border-radius: 50%;
+    border: 2.5px solid rgba(255,80,80,0.45); background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none; user-select: none;
+  }
+  #touch-fire-inner {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,80,80,0.3); border: 2px solid rgba(255,80,80,0.5);
+    pointer-events: none;
+  }
+  #touch-fire:active { border-color: rgba(255,80,80,0.7); background: rgba(80,0,0,0.5); }
+  #touch-weapon-strip {
+    display: flex; gap: 4px; flex: 1; justify-content: center; align-items: center;
+  }
+  .touch-weapon-slot {
+    width: 40px; height: 28px; border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.5);
+    color: rgba(255,255,255,0.4); font-size: 9px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; touch-action: none; user-select: none;
+  }
+  .touch-weapon-slot.active {
+    border: 2px solid rgba(255,200,0,0.6); background: rgba(255,200,0,0.1);
+    color: rgba(255,200,0,0.9);
+  }
+  .touch-weapon-badge {
+    position: absolute; top: -4px; right: -4px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: rgba(255,200,0,0.7); color: #000;
+    font-size: 8px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #touch-pause {
+    position: fixed; top: 8px; right: 8px; z-index: 102;
+    width: 40px; height: 40px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5);
+    color: rgba(255,255,255,0.6); font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none; user-select: none;
+  }
+  #touch-buy-btn {
+    position: fixed; top: 8px; right: 52px; z-index: 102;
+    height: 40px; padding: 0 10px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5);
+    color: #4caf50; font-size: 13px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none; user-select: none;
+  }
+  #touch-money {
+    position: fixed; top: 8px; right: 106px; z-index: 102;
+    height: 40px; padding: 0 8px;
+    color: #4caf50; font-size: 14px; font-weight: bold;
+    display: flex; align-items: center;
+    text-shadow: 0 0 4px #000;
+    pointer-events: none;
+  }
+  #fullscreen-btn {
+    position: fixed; top: 12px; left: 12px; z-index: 10000;
+    width: 28px; height: 28px; cursor: pointer;
+    background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+  }
+  #fullscreen-btn span {
+    position: absolute; width: 7px; height: 7px;
+    border-color: rgba(255,255,255,0.7); border-style: solid;
+  }
+  #fullscreen-btn span:nth-child(1) { top: 3px; left: 3px; border-width: 2px 0 0 2px; }
+  #fullscreen-btn span:nth-child(2) { top: 3px; right: 3px; border-width: 2px 2px 0 0; }
+  #fullscreen-btn span:nth-child(3) { bottom: 3px; left: 3px; border-width: 0 0 2px 2px; }
+  #fullscreen-btn span:nth-child(4) { bottom: 3px; right: 3px; border-width: 0 2px 2px 0; }
+  #fullscreen-btn.fs-active span:nth-child(1) { top: 3px; left: 3px; border-width: 0 2px 2px 0; }
+  #fullscreen-btn.fs-active span:nth-child(2) { top: 3px; right: 3px; border-width: 0 0 2px 2px; }
+  #fullscreen-btn.fs-active span:nth-child(3) { bottom: 3px; left: 3px; border-width: 2px 2px 0 0; }
+  #fullscreen-btn.fs-active span:nth-child(4) { bottom: 3px; right: 3px; border-width: 2px 0 0 2px; }
+  #touch-fullscreen {
+    position: fixed; top: 8px; left: 8px; z-index: 102;
+    width: 44px; height: 44px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  #touch-fullscreen span {
+    position: absolute; width: 7px; height: 7px;
+    border-color: rgba(255,255,255,0.7); border-style: solid;
+  }
+  #touch-fullscreen span:nth-child(1) { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+  #touch-fullscreen span:nth-child(2) { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+  #touch-fullscreen span:nth-child(3) { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
+  #touch-fullscreen span:nth-child(4) { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+  #touch-fullscreen.fs-active span:nth-child(1) { top: 10px; left: 10px; border-width: 0 2px 2px 0; }
+  #touch-fullscreen.fs-active span:nth-child(2) { top: 10px; right: 10px; border-width: 0 0 2px 2px; }
+  #touch-fullscreen.fs-active span:nth-child(3) { bottom: 10px; left: 10px; border-width: 2px 2px 0 0; }
+  #touch-fullscreen.fs-active span:nth-child(4) { bottom: 10px; right: 10px; border-width: 2px 0 0 2px; }
+  .mobile-hud-essentials #minimap-container {
+    display: none !important;
+  }
+  .mobile-hud-essentials #round-timer {
+    font-size: 10px; opacity: 0.7;
+  }
+  .mobile-hud-full #minimap-container {
+    display: block !important;
+  }
+  #touch-buy-menu {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.92); z-index: 200;
+    display: none; flex-direction: column;
+    padding: 14px; box-sizing: border-box; color: #fff;
+    font-family: system-ui, sans-serif;
+  }
+  .touch-buy-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; flex-shrink: 0;
+  }
+  .touch-buy-header-label {
+    color: rgba(255,255,255,0.4); font-size: 12px; font-weight: bold; letter-spacing: 1px;
+  }
+  .touch-buy-header-money {
+    color: #4caf50; font-size: 18px; font-weight: bold; font-family: monospace;
+  }
+  .touch-buy-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex: 1;
+  }
+  .touch-buy-card {
+    padding: 8px 10px; border-radius: 6px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    display: flex; flex-direction: column; justify-content: center;
+    touch-action: none; user-select: none;
+  }
+  .touch-buy-card.owned {
+    border-left: 3px solid rgba(255,200,0,0.6);
+  }
+  .touch-buy-card.too-expensive {
+    background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.06);
+    opacity: 0.35; pointer-events: none;
+  }
+  .touch-buy-card-name { font-size: 13px; font-weight: bold; color: rgba(255,255,255,0.9); }
+  .touch-buy-card-price { font-size: 11px; margin-top: 3px; }
+  .touch-buy-card-price.available { color: #4caf50; }
+  .touch-buy-card-price.owned { color: rgba(255,255,255,0.25); }
+  .touch-buy-card-price.expensive { color: #ff4444; }
+  .touch-buy-owned-badge {
+    font-size: 7px; color: rgba(255,200,0,0.8); font-weight: bold;
+    background: rgba(255,200,0,0.12); padding: 2px 4px; border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .touch-buy-close-cell {
+    padding: 8px 10px; border-radius: 6px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.5); font-size: 13px; font-weight: bold;
+    touch-action: none; user-select: none;
+  }
+
+  #touch-bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 40px;
+    background: rgba(0,0,0,0.6); z-index: 102;
+    display: flex; align-items: center; padding: 0 14px;
+    font-family: monospace; box-sizing: border-box;
+  }
+  #touch-bottom-hp { color: #4caf50; font-size: 15px; font-weight: bold; }
+  #touch-bottom-hp-icon { color: #4caf50; font-size: 10px; margin-right: 6px; }
+  #touch-bottom-ammo { margin-left: auto; }
+  #touch-bottom-ammo-mag { color: rgba(255,255,255,0.9); font-size: 14px; font-weight: bold; }
+  #touch-bottom-ammo-reserve { color: rgba(255,255,255,0.35); font-size: 11px; margin-left: 4px; }
+
+  /* Mobile-specific styles */
+  @media (pointer: coarse) {
+    #money-display {
+      display: none !important;
+    }
+    #round-timer { font-size: 12px; font-family: monospace; }
+    /* Hide numeric HP/Armor values — bars are sufficient on mobile */
+    .bar-value { display: none !important; }
+    #helmet-icon { display: none !important; }
+    /* Hide HP from bottom bar — replaced by health-bar bars */
+    #touch-bottom-hp, #touch-bottom-hp-icon { display: none !important; }
+  }
+  @media (max-height: 500px) and (pointer: coarse) {
+    #menu button, .config-diff-btn, .menu-btn {
+      min-height: 44px;
+      font-size: 14px;
+      padding: 10px 20px;
+    }
+    #health-bar, #ammo-display {
+      font-size: 11px;
+    }
+    #kill-feed {
+      font-size: 10px;
+    }
+    #buy-menu {
+      font-size: 11px;
+    }
+    #match-end, #round-end {
+      font-size: 12px;
+    }
+    #match-end button, #round-end button {
+      min-height: 44px;
+      padding: 10px 24px;
+    }
+  }
+
+  /* Hide touch controls on desktop */
+  @media (pointer: fine) {
+    #touch-move-zone, #touch-look-zone, #touch-joystick,
+    #touch-action-buttons, #touch-weapon-strip, #touch-pause,
+    #touch-buy-menu, #orient-overlay, #touch-fullscreen,
+    #touch-bottom-bar, #touch-fire, #touch-buy-btn, #touch-money {
+      display: none !important;
+    }
+  }
+  /* Hide desktop fullscreen btn on touch devices */
+  @media (pointer: coarse) {
+    #fullscreen-btn { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Menu Screen -->
+<div id="menu-screen">
+  <div id="menu-bg">
+    <div id="menu-sweep"></div>
+  </div>
+  <div id="menu-content">
+    <div id="menu-emblem">
+      <div class="emblem-h"></div>
+      <div class="emblem-v"></div>
+      <div class="emblem-ring"></div>
+      <div class="emblem-dot"></div>
+    </div>
+    <h1>MINI CS</h1>
+    <div class="subtitle-wrap">
+      <div class="subtitle-line"></div>
+      <div class="subtitle">Counter-Strike</div>
+      <div class="subtitle-line"></div>
+    </div>
+    <div id="rank-display" class="rank-display"></div>
+
+    <button id="quick-play-btn" class="quick-play-btn">QUICK PLAY</button>
+    <div id="quick-play-info" class="quick-play-info"></div>
+
+    <div class="mode-grid" id="mode-grid">
+      <div class="mode-card primary" data-mode="competitive">
+        <div class="mode-name">Competitive</div>
+        <div class="mode-desc">Round-based 5v5 action</div>
+        <div class="mode-config">
+          <div class="config-label">Mode</div>
+          <div class="config-diff-row" id="comp-mode-row">
+            <button class="config-diff-btn selected" data-comp-mode="solo">SOLO</button>
+            <button class="config-diff-btn" data-comp-mode="team">TEAM</button>
+          </div>
+          <div id="comp-team-options" style="display:none;">
+            <div class="config-label">Objective</div>
+            <div class="config-diff-row" id="comp-objective-row">
+              <button class="config-diff-btn selected" data-objective="elimination">ELIMINATION</button>
+              <button class="config-diff-btn" data-objective="bomb">BOMB DEFUSAL</button>
+            </div>
+            <div class="config-label">Side</div>
+            <div class="config-diff-row" id="comp-side-row">
+              <button class="config-diff-btn config-side-ct selected" data-side="ct">CT</button>
+              <button class="config-diff-btn config-side-t" data-side="t">T</button>
+            </div>
+          </div>
+          <div class="config-label">Difficulty</div>
+          <div class="config-diff-row" id="comp-diff-row">
+            <button class="config-diff-btn" data-diff="easy">EASY<span class="team-size-hint" style="display:none;"><br>2v2</span></button>
+            <button class="config-diff-btn selected" data-diff="normal">NORMAL<span class="team-size-hint" style="display:none;"><br>3v3</span></button>
+            <button class="config-diff-btn" data-diff="hard">HARD<span class="team-size-hint" style="display:none;"><br>4v4</span></button>
+            <button class="config-diff-btn" data-diff="elite">ELITE<span class="team-size-hint" style="display:none;"><br>5v5</span></button>
+          </div>
+          <div class="config-label">Map</div>
+          <div class="config-map-grid" id="comp-map-grid"></div>
+          <div class="map-shuffle-caption">SHUFFLE ACTIVE — MAPS CHOSEN RANDOMLY</div>
+          <div class="config-label">Map Mode</div>
+          <div class="config-diff-row" id="comp-map-mode-row">
+            <button class="config-diff-btn selected" data-map-mode="fixed">FIXED</button>
+            <button class="config-diff-btn" data-map-mode="shuffle">SHUFFLE</button>
+          </div>
+          <button class="mode-start-btn" id="comp-start-btn">START</button>
+          <button class="mode-start-btn boss-fight-btn" id="comp-boss-btn">BOSS FIGHT</button>
+        </div>
+      </div>
+      <div class="mode-card" data-mode="survival">
+        <div class="mode-name">Survival</div>
+        <div class="mode-desc">Wave-based horde survival</div>
+        <div class="mode-config">
+          <div class="config-label">Difficulty</div>
+          <div class="config-diff-row" id="surv-diff-row">
+            <button class="config-diff-btn" data-diff="easy">EASY</button>
+            <button class="config-diff-btn selected" data-diff="normal">NORMAL</button>
+            <button class="config-diff-btn" data-diff="hard">HARD</button>
+            <button class="config-diff-btn" data-diff="elite">ELITE</button>
+          </div>
+          <div class="config-label">Map</div>
+          <div class="config-map-grid" id="surv-map-grid"></div>
+          <div class="map-shuffle-caption">SHUFFLE ACTIVE — MAPS CHOSEN RANDOMLY</div>
+          <div class="config-label">Map Mode</div>
+          <div class="config-diff-row" id="surv-map-mode-row">
+            <button class="config-diff-btn selected" data-map-mode="fixed">FIXED</button>
+            <button class="config-diff-btn" data-map-mode="shuffle">SHUFFLE</button>
+          </div>
+          <button class="mode-start-btn" id="surv-start-btn">START</button>
+        </div>
+      </div>
+      <div class="mode-card" data-mode="gungame">
+        <div class="mode-name">Gun Game</div>
+        <div class="mode-desc">Weapon progression challenge</div>
+        <div class="mode-config">
+          <div class="config-label">Difficulty</div>
+          <div class="config-diff-row" id="gg-diff-row">
+            <button class="config-diff-btn" data-diff="easy">EASY</button>
+            <button class="config-diff-btn selected" data-diff="normal">NORMAL</button>
+            <button class="config-diff-btn" data-diff="hard">HARD</button>
+            <button class="config-diff-btn" data-diff="elite">ELITE</button>
+          </div>
+          <div class="config-label">Map</div>
+          <div class="config-map-grid" id="gg-map-grid"></div>
+          <div class="map-shuffle-caption">SHUFFLE ACTIVE — MAPS CHOSEN RANDOMLY</div>
+          <div class="config-label">Map Mode</div>
+          <div class="config-diff-row" id="gg-map-mode-row">
+            <button class="config-diff-btn selected" data-map-mode="fixed">FIXED</button>
+            <button class="config-diff-btn" data-map-mode="shuffle">SHUFFLE</button>
+          </div>
+          <button class="mode-start-btn" id="gg-start-btn">START</button>
+        </div>
+      </div>
+      <div class="mode-card" data-mode="deathmatch">
+        <div class="mode-name">Deathmatch</div>
+        <div class="mode-desc">Free-for-all frags</div>
+        <div class="mode-config">
+          <div class="config-label">Difficulty</div>
+          <div class="config-diff-row" id="dm-diff-row">
+            <button class="config-diff-btn" data-diff="easy">EASY</button>
+            <button class="config-diff-btn selected" data-diff="normal">NORMAL</button>
+            <button class="config-diff-btn" data-diff="hard">HARD</button>
+            <button class="config-diff-btn" data-diff="elite">ELITE</button>
+          </div>
+          <div class="config-label">Map</div>
+          <div class="config-map-grid" id="dm-config-map-grid"></div>
+          <div class="map-shuffle-caption">SHUFFLE ACTIVE — MAPS CHOSEN RANDOMLY</div>
+          <div class="config-label">Map Mode</div>
+          <div class="config-diff-row" id="dm-map-mode-row">
+            <button class="config-diff-btn selected" data-map-mode="fixed">FIXED</button>
+            <button class="config-diff-btn" data-map-mode="shuffle">SHUFFLE</button>
+          </div>
+          <button class="mode-start-btn" id="dm-start-btn">START</button>
+        </div>
+      </div>
+    </div>
+    <button class="mode-back" id="mode-back">&lsaquo; back to modes</button>
+
+    <div class="menu-footer">
+      <button class="menu-footer-btn" id="missions-footer-btn">Missions</button>
+      <button class="menu-footer-btn" id="loadout-footer-btn">Loadout</button>
+      <button class="menu-footer-btn" id="history-footer-btn">History</button>
+      <button class="menu-footer-btn" id="tour-footer-btn">Tour Maps</button>
+      <button class="menu-footer-btn" id="controls-footer-btn">Controls</button>
+    </div>
+  </div>
+  <div id="menu-version">v1.0</div>
+</div>
+<div id="fullscreen-btn"><span></span><span></span><span></span><span></span></div>
+
+<!-- Perk Selection Screen -->
+<div id="perk-screen">
+  <h1>CHOOSE A PERK</h1>
+  <div class="perk-subtitle">Bonus for winning the round</div>
+  <div id="perk-choices" class="perk-grid"></div>
+  <div class="perk-hint">Click a perk to continue</div>
+</div>
+
+<!-- HUD Overlay -->
+<div id="touch-fullscreen"><span></span><span></span><span></span><span></span></div>
+<div id="hud" style="display:none;">
+  <div id="game-vignette"></div>
+  <div id="active-perks"></div>
+  <div id="crosshair">
+    <div class="ch-line ch-top"></div>
+    <div class="ch-line ch-bottom"></div>
+    <div class="ch-line ch-left"></div>
+    <div class="ch-line ch-right"></div>
+  </div>
+  <div id="scope-overlay">
+    <div class="scope-vignette"></div>
+    <div class="scope-h"></div>
+    <div class="scope-v"></div>
+    <div class="scope-dot"></div>
+  </div>
+
+  <div id="health-bar">
+    <div class="bar-row">
+      <span class="bar-label">+</span>
+      <div class="bar-track"><div class="bar-fill" id="hp-fill"></div></div>
+      <span class="bar-value" id="hp-value">100</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">A</span>
+      <div class="bar-track"><div class="bar-fill" id="armor-fill"></div></div>
+      <span class="bar-value" id="armor-value">0</span>
+      <span id="helmet-icon" style="display:none;font-size:11px;margin-left:2px;color:#42a5f5;">H</span>
+    </div>
+  </div>
+
+  <div id="ammo-display">
+    <div class="weapon-name" id="weapon-name">Pistol</div>
+    <div class="ammo-numbers">
+      <span class="ammo-mag" id="ammo-mag">12</span>
+      <span class="ammo-sep">/</span>
+      <span class="ammo-reserve" id="ammo-reserve">36</span>
+    </div>
+  </div>
+
+  <div id="grenade-count">HE x0</div>
+  <div id="money-display">$800</div>
+  <div id="round-timer">1:30</div>
+  <div id="round-info">Round 1 / 6</div>
+  <div id="boss-health-bar">
+    <div id="boss-label">BOSS</div>
+    <div id="boss-hp-track">
+      <div id="boss-hp-fill"></div>
+      <div class="boss-phase-divider" style="left:50%"></div>
+      <div class="boss-phase-divider" style="left:75%"></div>
+    </div>
+  </div>
+  <div id="buy-phase-hint">Press F1 to skip buy phase</div>
+  <div id="kill-feed"></div>
+
+  <div id="hitmarker">
+    <div class="hm-line"></div><div class="hm-line"></div>
+    <div class="hm-line"></div><div class="hm-line"></div>
+  </div>
+  <div id="dmg-container"></div>
+  <div id="streak-announce"></div>
+  <canvas id="minimap" width="180" height="180"></canvas>
+  <div id="crouch-indicator">CROUCHING</div>
+  <div id="wave-counter"></div>
+  <div id="gungame-level"></div>
+
+  <div id="damage-flash" style="position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at center,transparent 50%,rgba(255,0,0,0.4) 100%);opacity:0;transition:opacity 0.1s;"></div>
+  <div id="damage-indicators" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;"></div>
+  <div id="blood-splatter" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:49;opacity:0;background:radial-gradient(ellipse at 15% 20%,rgba(139,0,0,0.6) 0%,transparent 40%),radial-gradient(ellipse at 85% 30%,rgba(120,0,0,0.5) 0%,transparent 35%),radial-gradient(ellipse at 20% 80%,rgba(100,0,0,0.4) 0%,transparent 30%),radial-gradient(ellipse at 80% 75%,rgba(130,0,0,0.5) 0%,transparent 35%);transition:opacity 0.1s;"></div>
+  <div id="flash-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:white;opacity:0;pointer-events:none;z-index:999;transition:opacity 0.05s;"></div>
+  <div id="low-health-pulse"></div>
+  <div id="quality-toast" style="position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#ccc;padding:6px 16px;border-radius:4px;font:12px monospace;pointer-events:none;z-index:1000;opacity:0;display:none;transition:opacity 0.3s;"></div>
+  <div id="boss-flash"></div>
+  <div id="announcement"></div>
+
+  <div id="scoreboard">
+    <h2>SCOREBOARD</h2>
+    <div class="score-row score-player">
+      <span id="score-player-label">You</span>
+      <span class="score-val" id="score-player">0</span>
+    </div>
+    <div class="score-row score-bots">
+      <span id="score-bots-label">Terrorists</span>
+      <span class="score-val" id="score-bots">0</span>
+    </div>
+    <div class="map-info" id="map-info">Map: Dust</div>
+  </div>
+
+  <div id="buy-menu">
+    <h2>BUY MENU</h2>
+    <div class="buy-item" data-weapon="smg">
+      <span><span class="item-key">[2]</span> <span class="item-name">MP5</span><span class="item-detail"></span></span>
+      <span class="item-price">$1250</span>
+    </div>
+    <div class="buy-item" data-weapon="shotgun">
+      <span><span class="item-key">[3]</span> <span class="item-name">Shotgun</span><span class="item-detail"></span></span>
+      <span class="item-price">$1800</span>
+    </div>
+    <div class="buy-item" data-weapon="rifle">
+      <span><span class="item-key">[4]</span> <span class="item-name">AK-47</span><span class="item-detail"></span></span>
+      <span class="item-price">$2700</span>
+    </div>
+    <div class="buy-item" data-weapon="awp">
+      <span><span class="item-key">[5]</span> <span class="item-name">AWP</span><span class="item-detail"></span></span>
+      <span class="item-price">$4750</span>
+    </div>
+    <div class="buy-item" data-item="armor">
+      <span><span class="item-key">[6]</span> <span class="item-name">Armor + Helmet</span></span>
+      <span class="item-price">$1000</span>
+    </div>
+    <div class="buy-item" data-item="grenade">
+      <span><span class="item-key">[7]</span> <span class="item-name">Grenade</span></span>
+      <span class="item-price">$300</span>
+    </div>
+    <div class="buy-item" data-item="smoke">
+      <span><span class="item-key">[8]</span> <span class="item-name">Smoke</span></span>
+      <span class="item-price">$300</span>
+    </div>
+    <div class="buy-item" data-item="flash">
+      <span><span class="item-key">[9]</span> <span class="item-name">Flashbang</span></span>
+      <span class="item-price">$200</span>
+    </div>
+    <div class="buy-balance">Balance: $800</div>
+    <div class="buy-hint">Press B to close</div>
+  </div>
+  <div id="radio-menu" class="radio-menu">
+    <div class="radio-title">RADIO</div>
+    <div class="radio-option" data-radio="1">1. Go go go!</div>
+    <div class="radio-option" data-radio="2">2. Fire in the hole!</div>
+    <div class="radio-option" data-radio="3">3. Contact!</div>
+    <div class="radio-option" data-radio="4">4. Need backup</div>
+    <div class="radio-option" data-radio="5">5. Affirmative</div>
+    <div class="radio-option" data-radio="6">6. Negative</div>
+  </div>
+
+  <div id="bomb-hud" style="display:none;">
+    <div id="bomb-timer-display"></div>
+    <div id="bomb-action-hint"></div>
+    <div id="bomb-progress-wrap">
+      <div id="bomb-progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Match End Screen -->
+<div id="match-end" class="summary-wrap">
+  <div class="summary-inner">
+    <div class="summary-hero">
+      <div class="summary-result" id="match-result"></div>
+      <div class="summary-score" id="final-score"></div>
+      <div class="summary-meta" id="match-meta"></div>
+    </div>
+    <div class="summary-stats" id="match-stats"></div>
+    <div class="summary-xp" id="match-xp-breakdown"></div>
+    <div class="summary-btns">
+      <button class="summary-btn summary-btn-primary" id="restart-btn">Play Again</button>
+      <button class="summary-btn summary-btn-secondary" id="menu-btn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- History Panel -->
+<div id="history-panel">
+  <h2>MATCH HISTORY</h2>
+  <div class="summary-stats" id="history-stats"></div>
+  <div class="history-list" id="history-list"></div>
+  <button class="history-close" id="history-close">Close</button>
+</div>
+
+<!-- Tour: Map Selection Panel -->
+<div id="tour-panel">
+  <h2>SELECT MAP</h2>
+  <div class="tour-maps">
+    <button class="tour-map-btn" data-map="0">
+      <div class="tour-map-name">Dust</div>
+      <div class="tour-map-desc">Desert market &mdash; sandy ruins, market stalls, destroyed vehicle</div>
+    </button>
+    <button class="tour-map-btn" data-map="1">
+      <div class="tour-map-name">Office</div>
+      <div class="tour-map-desc">Modern interior &mdash; desks, server room, corridors</div>
+    </button>
+    <button class="tour-map-btn" data-map="2">
+      <div class="tour-map-name">Warehouse</div>
+      <div class="tour-map-desc">Multi-floor industrial &mdash; shipping containers, catwalks, observation room</div>
+    </button>
+    <button class="tour-map-btn" data-map="3">
+      <div class="tour-map-name">Bloodstrike</div>
+      <div class="tour-map-desc">Loop arena &mdash; corridors circle a sealed inner block, tan concrete, brick trim</div>
+    </button>
+    <button class="tour-map-btn" data-map="4">
+      <div class="tour-map-name">Italy</div>
+      <div class="tour-map-desc">Italian village &mdash; piazza fountain, narrow alleys, wine cellar, balconies</div>
+    </button>
+    <button class="tour-map-btn" data-map="5">
+      <div class="tour-map-name">Aztec</div>
+      <div class="tour-map-desc">Jungle temple ruins &mdash; river, rope bridge, stepped pyramid, ancient corridors</div>
+    </button>
+    <button class="tour-map-btn" data-map="6">
+      <div class="tour-map-name">Arena</div>
+      <div class="tour-map-desc">Open-air combat arena &mdash; central platform, four corridors, crate cover</div>
+    </button>
+
+  </div>
+  <button class="history-close" id="tour-panel-close">Close</button>
+</div>
+
+<!-- Survival End Screen -->
+<div id="survival-end" class="summary-wrap">
+  <div class="summary-inner">
+    <div class="summary-hero">
+      <div class="summary-result elim">ELIMINATED</div>
+      <div class="summary-score" id="survival-wave-result"></div>
+      <div class="summary-meta" id="survival-meta"></div>
+    </div>
+    <div class="summary-stats" id="survival-stats-display"></div>
+    <div class="summary-xp" id="survival-xp-breakdown"></div>
+    <div class="summary-btns">
+      <button class="summary-btn summary-btn-primary" id="survival-restart-btn">Retry</button>
+      <button class="summary-btn summary-btn-secondary" id="survival-menu-btn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gun Game End Screen -->
+<div id="gungame-end" class="summary-wrap">
+  <div class="summary-inner">
+    <div class="summary-hero">
+      <div class="summary-result progress">COMPLETE</div>
+      <div class="summary-score" id="gungame-time-result"></div>
+      <div class="summary-meta" id="gungame-meta"></div>
+    </div>
+    <div class="summary-stats" id="gungame-stats-display"></div>
+    <div class="summary-xp" id="gungame-xp-breakdown"></div>
+    <div class="summary-btns">
+      <button class="summary-btn summary-btn-primary" id="gungame-restart-btn">Retry</button>
+      <button class="summary-btn summary-btn-secondary" id="gungame-menu-btn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deathmatch End Screen -->
+<div id="deathmatch-end" class="summary-wrap">
+  <div class="summary-inner">
+    <div class="summary-hero">
+      <div class="summary-result" id="dm-result"></div>
+      <div class="summary-score" id="dm-kill-result"></div>
+      <div class="summary-meta" id="dm-meta"></div>
+    </div>
+    <div class="summary-stats" id="dm-stats-display"></div>
+    <div class="summary-xp" id="dm-xp-breakdown"></div>
+    <div class="summary-btns">
+      <button class="summary-btn summary-btn-primary" id="dm-restart-btn">Play Again</button>
+      <button class="summary-btn summary-btn-secondary" id="dm-menu-btn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deathmatch Kill Counter HUD -->
+<div id="dm-kill-counter"></div>
+
+<!-- Deathmatch Respawn Timer -->
+<div id="dm-respawn-timer"></div>
+
+<!-- Pause Overlay -->
+<div id="pause-overlay">
+  <h1>PAUSED</h1>
+  <div class="pause-hint">Press ESC to resume</div>
+  <button id="pause-resume-btn">RESUME</button>
+  <button id="pause-controls-btn">CONTROLS</button>
+  <button class="menu-btn" id="pause-menu-btn">MAIN MENU</button>
+</div>
+
+<div id="pause-hint-key">P &mdash; Pause</div>
+
+<!-- Controls Overlay -->
+<div id="controls-overlay">
+  <h2>CONTROLS</h2>
+  <div class="controls-categories">
+    <div class="controls-category">
+      <h3 class="controls-cat-header">Movement</h3>
+      <div class="controls-grid">
+        <div class="ctrl-item"><span class="ctrl-key">WASD</span> Move</div>
+        <div class="ctrl-item"><span class="ctrl-key">Mouse</span> Look</div>
+        <div class="ctrl-item"><span class="ctrl-key">Space</span> Jump</div>
+        <div class="ctrl-item"><span class="ctrl-key">Shift</span> Sprint</div>
+        <div class="ctrl-item"><span class="ctrl-key">C</span> Crouch</div>
+      </div>
+    </div>
+    <div class="controls-category">
+      <h3 class="controls-cat-header">Combat</h3>
+      <div class="controls-grid">
+        <div class="ctrl-item"><span class="ctrl-key">Click</span> Shoot</div>
+        <div class="ctrl-item"><span class="ctrl-key">R</span> Reload</div>
+        <div class="ctrl-item"><span class="ctrl-key">F/RMB</span> Scope</div>
+        <div class="ctrl-item"><span class="ctrl-key">1-5</span> Weapons</div>
+        <div class="ctrl-item"><span class="ctrl-key">G/7-9</span> Grenades</div>
+        <div class="ctrl-item"><span class="ctrl-key">E</span> Plant/Defuse</div>
+      </div>
+    </div>
+    <div class="controls-category">
+      <h3 class="controls-cat-header">Game</h3>
+      <div class="controls-grid">
+        <div class="ctrl-item"><span class="ctrl-key">B</span> Buy Menu</div>
+        <div class="ctrl-item"><span class="ctrl-key">F1</span> Skip Buy</div>
+        <div class="ctrl-item"><span class="ctrl-key">Tab</span> Scoreboard</div>
+        <div class="ctrl-item"><span class="ctrl-key">Z</span> Radio</div>
+        <div class="ctrl-item"><span class="ctrl-key">P/ESC</span> Pause</div>
+      </div>
+    </div>
+  </div>
+  <button class="overlay-close" id="controls-close">Close</button>
+</div>
+
+<!-- Loadout Overlay -->
+<div id="loadout-overlay">
+  <h2>LOADOUT</h2>
+  <div class="loadout-weapons" id="loadout-weapons"></div>
+  <div class="loadout-skins" id="loadout-skins"></div>
+  <button class="overlay-close" id="loadout-close">Close</button>
+</div>
+
+<!-- Missions Overlay -->
+<div id="missions-overlay">
+  <h2>DAILY MISSIONS</h2>
+  <div class="missions-content">
+    <div id="overlay-mission-daily-list" class="mission-list"></div>
+    <h2 style="margin-top:24px;">WEEKLY MISSION</h2>
+    <div id="overlay-mission-weekly" class="mission-card"></div>
+  </div>
+  <button class="overlay-close" id="missions-close">Close</button>
+</div>
+
+<!-- Tour: Exit Button + Map Label (shown during tour) -->
+<button id="tour-exit-btn">EXIT TOUR</button>
+<div id="tour-map-label"></div>
+
+<!-- Menu particles -->
+<script>
+(function() {
+  var bg = document.getElementById('menu-bg');
+  if (!bg) return;
+  for (var i = 0; i < 30; i++) {
+    var p = document.createElement('div');
+    p.className = 'menu-particle';
+    var size = 1 + Math.random() * 3;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.bottom = '-5%';
+    p.style.animationDuration = (6 + Math.random() * 10) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    p.style.opacity = 0.1 + Math.random() * 0.4;
+    bg.appendChild(p);
+  }
+})();
+</script>
+<!-- Three.js vendored locally for self-hosted portal playback -->
+<script src="vendor/three.min.js"></script>
+<!-- Game scripts in dependency order -->
+<script src="js/maps/shared.js"></script>
+<script src="js/maps/props.js"></script>
+<script src="js/maps/dust.js"></script>
+<script src="js/maps/office.js"></script>
+<script src="js/maps/warehouse.js"></script>
+<script src="js/maps/bloodstrike.js"></script>
+<script src="js/maps/italy.js"></script>
+<script src="js/maps/aztec.js"></script>
+<script src="js/maps/arena.js"></script>
+<script src="js/core/player.js"></script>
+<script src="js/core/sound.js"></script>
+<script src="js/core/format.js"></script>
+<script src="js/core/quality.js"></script>
+<script src="js/core/fullscreen.js"></script>
+<script src="js/core/renderer.js"></script>
+<script src="js/effects/particles.js"></script>
+<script src="js/effects/effects.js"></script>
+<script src="js/effects/birds.js"></script>
+<script src="js/systems/weapons.js"></script>
+<script src="js/systems/enemies.js"></script>
+<script src="js/systems/progression.js"></script>
+<script src="js/systems/bomb.js"></script>
+<script src="js/systems/boss.js"></script>
+<script src="js/systems/shuffle.js"></script>
+<script src="js/ui/touch.js"></script>
+<script src="js/ui/minimap.js"></script>
+<script src="js/ui/hud.js"></script>
+<script src="js/ui/buy.js"></script>
+<script src="js/ui/menu.js"></script>
+<script src="js/modes/competitive.js"></script>
+<script src="js/modes/survival.js"></script>
+<script src="js/modes/gungame.js"></script>
+<script src="js/modes/deathmatch.js"></script>
+<script src="js/core/main.js"></script>
+</body>
+</html>

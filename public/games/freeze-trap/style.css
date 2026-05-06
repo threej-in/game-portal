@@ -1,0 +1,179 @@
+/* style.css */
+body {
+    font-family: ui-monospace, "Cascadia Mono", "Courier New", monospace;
+    margin: 0; /* NEW: Ensures no default body margin */
+    overflow: hidden; /* NEW: Prevents scrollbars */
+}
+
+h1 {
+    font-size: clamp(2rem, 5vw, 3rem); 
+    position: absolute; /* NEW: Position title over the canvas */
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+#backgroundCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+}
+
+/* UPDATED: Container now fills the screen */
+#gameContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* UPDATED: Canvas now behaves as a top-level element */
+#gameCanvas {
+    border: none;
+    box-shadow: none;
+}
+
+.menu-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem; /* Adjusted gap */
+}
+
+/* NEW: Style for the big game over message */
+.game-over-message {
+    font-family: inherit;
+    font-size: 48px;
+    margin: 0.5rem 0 1.5rem 0;
+    padding: 0;
+    color: #facc15;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+}
+
+.menu-title {
+    font-size: 24px;
+    color: #000000;
+    text-shadow: none;   
+}
+
+/* NEW: Specific styles for the game over screen */
+#gameOverMenu .menu-title {
+    color: #facc15;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.menu-button {
+    background-color: transparent;
+    border: 2px solid #000000;
+    color: #000000;
+    padding: 15px 25px;
+    width: 250px;
+    font-family: inherit;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+.menu-button:hover {
+    background-color: #000000;
+    color: #FFFFFF;
+}
+
+/* NEW: Game over button styles */
+#gameOverMenu .menu-button {
+    border-color: #facc15;
+    color: #facc15;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+#gameOverMenu .menu-button:hover {
+    background-color: #facc15;
+    color: #0f172a;
+    text-shadow: none;
+}
+
+.menu-button-secondary {
+    background-color: transparent;
+    border: none;
+    color: #000000;
+    margin-top: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    text-shadow: none;
+}
+
+/* NEW: Game over secondary button style */
+#gameOverMenu .menu-button-secondary {
+    color: #facc15;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.slider-container {
+    color: #000000;
+    text-shadow: none;
+    width: 350px;
+    text-align: center;
+    font-size: 16px;
+}
+.slider {
+    width: 100%;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+#inGameControls {
+    position: absolute;
+    bottom: 20px; /* Use px for more consistent spacing from bottom */
+    left: 50%;
+    transform: translateX(-50%);
+    display: none; 
+    gap: 1rem;
+    z-index: 10;
+}
+
+.ingame-button {
+    background-color: rgba(15, 23, 42, 0.5);
+    border: 1px solid #22d3ee;
+    color: #22d3ee;
+    padding: 8px 16px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+}
+
+.ingame-button:hover {
+    background-color: #22d3ee;
+    color: #0f172a;
+}
+
+/* Style for the main title when it's moved during gameplay */
+.ingame-title {
+    left: 20px;
+    top: 10px;
+    transform: translateX(0); /* Reset the centering transform */
+    font-size: 24px;
+}
+
+@media (max-width: 768px) {
+    .ingame-title {
+        font-size: 18px; /* Use a smaller font on mobile */
+        top: 8px;        /* Adjust position slightly */
+        left: 15px;
+    }
+}

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Untrusted cover</title>
+  <desc id="desc">Terminal-inspired Untrusted game cover.</desc>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="42%" r="60%">
+      <stop offset="0%" stop-color="#1f7a45"/>
+      <stop offset="55%" stop-color="#07170f"/>
+      <stop offset="100%" stop-color="#020403"/>
+    </radialGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="800" height="1000" fill="url(#glow)"/>
+  <g opacity=".16" stroke="#55ff8a" stroke-width="2">
+    <path d="M70 120h660M70 190h660M70 260h660M70 330h660M70 400h660M70 470h660M70 540h660M70 610h660M70 680h660M70 750h660M70 820h660"/>
+    <path d="M120 80v840M210 80v840M300 80v840M390 80v840M480 80v840M570 80v840M660 80v840"/>
+  </g>
+  <rect x="88" y="130" width="624" height="620" rx="18" fill="#050807" stroke="#38ff78" stroke-width="4"/>
+  <text x="128" y="205" fill="#8cffaa" font-family="Consolas, 'Courier New', monospace" font-size="42">&gt; eval(reality)</text>
+  <text x="128" y="300" fill="#d9ffe3" font-family="Consolas, 'Courier New', monospace" font-size="86" font-weight="700">UNTRUSTED</text>
+  <text x="128" y="370" fill="#8cffaa" font-family="Consolas, 'Courier New', monospace" font-size="31">A Meta-JavaScript</text>
+  <text x="128" y="416" fill="#8cffaa" font-family="Consolas, 'Courier New', monospace" font-size="31">Adventure Game</text>
+  <g filter="url(#softGlow)" fill="#40ff78">
+    <rect x="150" y="515" width="42" height="42"/>
+    <rect x="192" y="515" width="42" height="42"/>
+    <rect x="234" y="515" width="42" height="42"/>
+    <rect x="276" y="515" width="42" height="42"/>
+    <rect x="318" y="515" width="42" height="42"/>
+    <rect x="360" y="515" width="42" height="42"/>
+    <rect x="402" y="515" width="42" height="42"/>
+    <rect x="444" y="515" width="42" height="42"/>
+    <rect x="486" y="515" width="42" height="42"/>
+    <rect x="528" y="515" width="42" height="42"/>
+  </g>
+  <rect x="360" y="473" width="42" height="42" fill="#e8fff0"/>
+  <text x="128" y="665" fill="#58ff88" font-family="Consolas, 'Courier New', monospace" font-size="34">while (!free) hack();</text>
+  <text x="400" y="855" text-anchor="middle" fill="#d9ffe3" font-family="Consolas, 'Courier New', monospace" font-size="46">EDIT THE WORLD</text>
+</svg>

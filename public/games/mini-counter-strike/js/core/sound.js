@@ -1,0 +1,2298 @@
+// js/core/sound.js — Procedural sound effects using Web Audio API
+// Attaches GAME.Sound
+
+(function() {
+  'use strict';
+  if (!window.GAME) window.GAME = {};
+
+  var ctx = null;
+  var masterGain = null;
+  var compressor = null;
+  var _voiceCooldown = 0;
+  var _selectedVoice = null;
+  var _voicesLoaded = false;
+  var _uiLastPlayed = {};
+
+  // Radio voice processing chain nodes
+  var _radioChainInput = null;
+  var _radioChainOutput = null;
+  var _radioNoiseGain = null;
+  var _radioNoiseSource = null;
+  var _radioNoiseLowGain = null;
+  var _radioNoiseHighGain = null;
+  var _radioCrackleInterval = null;
+  var _radioCarrierGain = null;
+  var _radioCarrierOsc = null;
+  var _radioLfoOsc = null;
+  var _radioLfoGain = null;
+
+  function ensureCtx() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Master compressor for punch
+      compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.value = -24;
+      compressor.knee.value = 12;
+      compressor.ratio.value = 4;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.15;
+      compressor.connect(ctx.destination);
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.5;
+      masterGain.connect(compressor);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  // Pre-generated noise buffer cache — avoids per-shot buffer allocation
+  var _noiseCache = null;
+  var _noiseCacheSampleRate = 0;
+  var _NOISE_CACHE_DURATION = 6; // seconds — must exceed longest ambient buffer request (4s)
+
+  function _ensureNoiseCache(c) {
+    if (_noiseCache && _noiseCacheSampleRate === c.sampleRate) return;
+    var len = Math.ceil(c.sampleRate * _NOISE_CACHE_DURATION);
+    _noiseCache = c.createBuffer(1, len, c.sampleRate);
+    var data = _noiseCache.getChannelData(0);
+    for (var i = 0; i < len; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    _noiseCacheSampleRate = c.sampleRate;
+  }
+
+  // Return a noise buffer by reusing a random offset into the cached buffer
+  function getNoiseBuffer(duration) {
+    var c = ensureCtx();
+    _ensureNoiseCache(c);
+    var len = Math.ceil(c.sampleRate * duration);
+    var cacheLen = _noiseCache.length;
+    // If requested duration exceeds cache, generate fresh buffer
+    if (len >= cacheLen) {
+      var buf = c.createBuffer(1, len, c.sampleRate);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      return buf;
+    }
+    var offset = Math.floor(Math.random() * (cacheLen - len));
+    var buf = c.createBuffer(1, len, c.sampleRate);
+    var src = _noiseCache.getChannelData(0);
+    var dst = buf.getChannelData(0);
+    dst.set(src.subarray(offset, offset + len));
+    return buf;
+  }
+
+  // Waveshaper distortion — gives gunshots the harsh, clipped character of real firearms
+  var _distCurves = {};
+  function getDistortionCurve(amount) {
+    if (_distCurves[amount]) return _distCurves[amount];
+    var samples = 8192;
+    var curve = new Float32Array(samples);
+    for (var i = 0; i < samples; i++) {
+      var x = (i * 2) / samples - 1;
+      curve[i] = (Math.PI + amount) * x / (Math.PI + amount * Math.abs(x));
+    }
+    _distCurves[amount] = curve;
+    return curve;
+  }
+
+  // Helper: shaped noise burst with optional distortion
+  function noiseBurst(opts) {
+    var c = ensureCtx();
+    var t = c.currentTime + (opts.delay || 0);
+    var dur = opts.duration || 0.1;
+    var buf = getNoiseBuffer(dur + 0.02);
+    var src = c.createBufferSource();
+    src.buffer = buf;
+    var f = c.createBiquadFilter();
+    f.type = opts.filterType || 'bandpass';
+    f.frequency.setValueAtTime(opts.freq || 1000, t);
+    if (opts.freqEnd) f.frequency.exponentialRampToValueAtTime(opts.freqEnd, t + dur);
+    f.Q.value = opts.Q || 1;
+    var g = c.createGain();
+    var atk = opts.attack || 0.001;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(opts.gain || 0.5, t + atk);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    var nodes = [src, f, g];
+    src.connect(f);
+    if (opts.distortion) {
+      var ws = c.createWaveShaper();
+      ws.curve = getDistortionCurve(opts.distortion);
+      ws.oversample = '2x';
+      f.connect(ws);
+      ws.connect(g);
+      nodes.push(ws);
+    } else {
+      f.connect(g);
+    }
+    var dest = opts.destination || masterGain;
+    g.connect(dest);
+    src.onended = function() {
+      for (var i = 0; i < nodes.length; i++) {
+        try { nodes[i].disconnect(); } catch(e) {}
+      }
+    };
+    src.start(t);
+    src.stop(t + dur + 0.01);
+  }
+
+  // Helper: resonant tone (barrel/chamber resonance)
+  function resTone(opts) {
+    var c = ensureCtx();
+    var t = c.currentTime + (opts.delay || 0);
+    var dur = opts.duration || 0.08;
+    var osc = c.createOscillator();
+    var g = c.createGain();
+    osc.type = opts.type || 'sine';
+    osc.frequency.setValueAtTime(opts.freq, t);
+    if (opts.freqEnd) osc.frequency.exponentialRampToValueAtTime(opts.freqEnd, t + dur);
+    g.gain.setValueAtTime(opts.gain || 0.3, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    var nodes = [osc, g];
+    if (opts.filterFreq) {
+      var f = c.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.setValueAtTime(opts.filterFreq, t);
+      if (opts.filterEnd) f.frequency.exponentialRampToValueAtTime(opts.filterEnd, t + dur);
+      osc.connect(f);
+      f.connect(g);
+      nodes.push(f);
+    } else {
+      osc.connect(g);
+    }
+    var dest = opts.destination || masterGain;
+    g.connect(dest);
+    osc.onended = function() {
+      for (var i = 0; i < nodes.length; i++) {
+        try { nodes[i].disconnect(); } catch(e) {}
+      }
+    };
+    osc.start(t);
+    osc.stop(t + dur + 0.01);
+  }
+
+  // Helper: simple tone
+  function tone(freq, duration, volume, type) {
+    var c = ensureCtx();
+    var t = c.currentTime;
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.onended = function() {
+      try { osc.disconnect(); } catch(e) {}
+      try { gain.disconnect(); } catch(e) {}
+    };
+    osc.start(t);
+    osc.stop(t + duration);
+  }
+
+  // Metallic click helper
+  function metallicClick(freq, vol) {
+    var c = ensureCtx();
+    var t = c.currentTime;
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    var filter = c.createBiquadFilter();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, t);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.4, t + 0.04);
+    filter.type = 'bandpass';
+    filter.frequency.value = freq;
+    filter.Q.value = 8;
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(masterGain);
+    osc.onended = function() {
+      try { osc.disconnect(); } catch(e) {}
+      try { filter.disconnect(); } catch(e) {}
+      try { gain.disconnect(); } catch(e) {}
+    };
+    osc.start(t);
+    osc.stop(t + 0.06);
+  }
+
+  function _uiDebounce(key) {
+    var now = performance.now();
+    if (_uiLastPlayed[key] && now - _uiLastPlayed[key] < 50) return true;
+    _uiLastPlayed[key] = now;
+    return false;
+  }
+
+  var _ambientNodes = [];
+  var _ambientGain = null;
+
+  var Sound = {
+    init: function() {
+      ensureCtx();
+      // Load preferred voice
+      function pickVoice() {
+        var voices = speechSynthesis.getVoices();
+        if (!voices.length) return;
+        _voicesLoaded = true;
+        // Priority 1: Known male voice names (local service preferred)
+        var maleNames = /david|daniel|james|mark|alex|thomas|fred|male/i;
+        for (var i = 0; i < voices.length; i++) {
+          if (/en/i.test(voices[i].lang) && maleNames.test(voices[i].name) && voices[i].localService) {
+            _selectedVoice = voices[i]; return;
+          }
+        }
+        // Priority 2: Known male voice names (any service)
+        for (var i = 0; i < voices.length; i++) {
+          if (/en/i.test(voices[i].lang) && maleNames.test(voices[i].name)) {
+            _selectedVoice = voices[i]; return;
+          }
+        }
+        // Priority 3: Any English local service voice
+        for (var i = 0; i < voices.length; i++) {
+          if (/en/i.test(voices[i].lang) && voices[i].localService) {
+            _selectedVoice = voices[i]; return;
+          }
+        }
+        // Priority 4: Any English voice
+        for (var i = 0; i < voices.length; i++) {
+          if (/en/i.test(voices[i].lang)) { _selectedVoice = voices[i]; return; }
+        }
+        _selectedVoice = voices[0];
+      }
+      pickVoice();
+      if (!_voicesLoaded) speechSynthesis.addEventListener('voiceschanged', pickVoice);
+
+      // Build radio voice processing chain
+      var c = ensureCtx();
+      // Input gain (trim)
+      _radioChainInput = c.createGain();
+      _radioChainInput.gain.value = 1.5;
+      // Highpass: cut boomy low end
+      var hp = c.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 600;
+      hp.Q.value = 0.7;
+      // Bandpass: narrow to radio band
+      var bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1800;
+      bp.Q.value = 1.5;
+      // Distortion: hard clipping for grit
+      var dist = c.createWaveShaper();
+      dist.curve = getDistortionCurve(30);
+      dist.oversample = '4x';
+      // Heavy compression: squash dynamics like radio AGC
+      var comp = c.createDynamicsCompressor();
+      comp.threshold.value = -50;
+      comp.knee.value = 0;
+      comp.ratio.value = 20;
+      comp.attack.value = 0.001;
+      comp.release.value = 0.05;
+      // Lowpass: roll off harsh highs
+      var lp = c.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 3500;
+      lp.Q.value = 0.5;
+      // Output gain
+      _radioChainOutput = c.createGain();
+      _radioChainOutput.gain.value = 0.9;
+      // Wire the chain
+      _radioChainInput.connect(hp);
+      hp.connect(bp);
+      bp.connect(dist);
+      dist.connect(comp);
+      comp.connect(lp);
+      lp.connect(_radioChainOutput);
+      _radioChainOutput.connect(masterGain);
+      // === Multi-layer radio noise system ===
+      // Master noise gain (controls all noise layers together)
+      _radioNoiseGain = c.createGain();
+      _radioNoiseGain.gain.value = 0; // off by default
+      _radioNoiseGain.connect(masterGain);
+      // Layer 1: Mid-band hiss (primary radio static) — narrow band around 1.5kHz
+      var noiseBuf = getNoiseBuffer(1.0);
+      _radioNoiseSource = c.createBufferSource();
+      _radioNoiseSource.buffer = noiseBuf;
+      _radioNoiseSource.loop = true;
+      var noiseMidBp = c.createBiquadFilter();
+      noiseMidBp.type = 'bandpass';
+      noiseMidBp.frequency.value = 1500;
+      noiseMidBp.Q.value = 2.0;
+      var noiseMidDist = c.createWaveShaper();
+      noiseMidDist.curve = getDistortionCurve(20);
+      _radioNoiseSource.connect(noiseMidBp);
+      noiseMidBp.connect(noiseMidDist);
+      noiseMidDist.connect(_radioNoiseGain);
+      _radioNoiseSource.start();
+      // Layer 2: Low rumble (300-800Hz, subtle)
+      var noiseBuf2 = getNoiseBuffer(1.0);
+      var noiseLow = c.createBufferSource();
+      noiseLow.buffer = noiseBuf2;
+      noiseLow.loop = true;
+      var noiseLowBp = c.createBiquadFilter();
+      noiseLowBp.type = 'bandpass';
+      noiseLowBp.frequency.value = 500;
+      noiseLowBp.Q.value = 1.0;
+      _radioNoiseLowGain = c.createGain();
+      _radioNoiseLowGain.gain.value = 0;
+      noiseLow.connect(noiseLowBp);
+      noiseLowBp.connect(_radioNoiseLowGain);
+      _radioNoiseLowGain.connect(masterGain);
+      noiseLow.start();
+      // Layer 3: High hiss/sizzle (2.5-4kHz)
+      var noiseBuf3 = getNoiseBuffer(1.0);
+      var noiseHigh = c.createBufferSource();
+      noiseHigh.buffer = noiseBuf3;
+      noiseHigh.loop = true;
+      var noiseHighBp = c.createBiquadFilter();
+      noiseHighBp.type = 'bandpass';
+      noiseHighBp.frequency.value = 3000;
+      noiseHighBp.Q.value = 1.5;
+      _radioNoiseHighGain = c.createGain();
+      _radioNoiseHighGain.gain.value = 0;
+      noiseHigh.connect(noiseHighBp);
+      noiseHighBp.connect(_radioNoiseHighGain);
+      _radioNoiseHighGain.connect(masterGain);
+      noiseHigh.start();
+      // Layer 4: Radio carrier tone — tonal hum that gives walkie-talkie its character
+      _radioCarrierGain = c.createGain();
+      _radioCarrierGain.gain.value = 0;
+      _radioCarrierOsc = c.createOscillator();
+      _radioCarrierOsc.type = 'sawtooth';
+      _radioCarrierOsc.frequency.value = 1200; // Characteristic radio whine
+      // Narrow the carrier through a tight bandpass for thin, reedy quality
+      var carrierBp = c.createBiquadFilter();
+      carrierBp.type = 'bandpass';
+      carrierBp.frequency.value = 1200;
+      carrierBp.Q.value = 12;
+      // Distort the carrier for that harsh radio edge
+      var carrierDist = c.createWaveShaper();
+      carrierDist.curve = getDistortionCurve(40);
+      _radioCarrierOsc.connect(carrierBp);
+      carrierBp.connect(carrierDist);
+      carrierDist.connect(_radioCarrierGain);
+      _radioCarrierGain.connect(masterGain);
+      _radioCarrierOsc.start();
+      // LFO: slow amplitude modulation on mid-noise for breathing/pulsing effect
+      _radioLfoGain = c.createGain();
+      _radioLfoGain.gain.value = 0;
+      _radioLfoOsc = c.createOscillator();
+      _radioLfoOsc.type = 'sine';
+      _radioLfoOsc.frequency.value = 3.5; // ~3.5Hz wobble
+      _radioLfoOsc.connect(_radioLfoGain);
+      _radioLfoGain.connect(_radioNoiseGain.gain); // modulates noise volume
+      _radioLfoOsc.start();
+    },
+
+    // --- Realistic 9mm Pistol (USP) ---
+    // Modeled after real 9x19mm: sharp crack, moderate report, fast slide action
+    pistolShot: function() {
+      // 1. Initial crack — ultra-short distorted impulse (supersonic snap)
+      noiseBurst({ duration: 0.012, gain: 0.85, freq: 3500, Q: 0.5,
+        filterType: 'highpass', distortion: 40 });
+      // 2. Muzzle blast — mid-frequency body of the report
+      noiseBurst({ duration: 0.07, gain: 0.55, freq: 1400, freqEnd: 300,
+        Q: 0.8, distortion: 15 });
+      // 3. Low blast — propellant gas expansion
+      noiseBurst({ duration: 0.09, gain: 0.4, freq: 600, freqEnd: 150,
+        filterType: 'lowpass', Q: 0.6 });
+      // 4. Report tone — barrel resonance gives the pistol its character
+      resTone({ freq: 520, freqEnd: 100, duration: 0.06, gain: 0.35,
+        type: 'sawtooth', filterFreq: 3000, filterEnd: 400 });
+      // 5. High-frequency snap — the bright "crack"
+      noiseBurst({ duration: 0.02, gain: 0.3, freq: 6000, Q: 0.4,
+        filterType: 'highpass' });
+      // 6. Sub-bass thump — felt in the chest
+      resTone({ freq: 85, freqEnd: 30, duration: 0.08, gain: 0.4, type: 'sine' });
+      // 7. Slide cycling — delayed mechanical action
+      setTimeout(function() {
+        metallicClick(2000, 0.1);
+        setTimeout(function() { metallicClick(2800, 0.07); }, 18);
+      }, 55);
+      // 8. Room reflection tail
+      noiseBurst({ duration: 0.16, gain: 0.06, freq: 900, freqEnd: 400,
+        Q: 0.4, delay: 0.015, attack: 0.01 });
+    },
+
+    // --- Realistic 7.62x39mm Rifle (AK-47) ---
+    // Modeled after real AK: aggressive bark, heavy muzzle blast, gas system hiss
+    rifleShot: function() {
+      // 1. Initial crack — harder, louder than pistol (higher velocity round)
+      noiseBurst({ duration: 0.01, gain: 1.0, freq: 4000, Q: 0.4,
+        filterType: 'highpass', distortion: 60 });
+      // 2. Muzzle blast — the dominant "bark", wider bandwidth than pistol
+      noiseBurst({ duration: 0.06, gain: 0.7, freq: 1800, freqEnd: 400,
+        Q: 0.6, distortion: 25 });
+      // 3. Low-mid body — deeper than pistol, gives the AK its heavy sound
+      noiseBurst({ duration: 0.08, gain: 0.55, freq: 800, freqEnd: 150,
+        Q: 0.7, distortion: 10 });
+      // 4. Gas port hiss — characteristic of gas-operated rifles
+      noiseBurst({ duration: 0.04, gain: 0.2, freq: 5000, freqEnd: 2000,
+        filterType: 'highpass', delay: 0.005 });
+      // 5. Report tone — lower, angrier than pistol
+      resTone({ freq: 700, freqEnd: 60, duration: 0.05, gain: 0.4,
+        type: 'sawtooth', filterFreq: 4500, filterEnd: 300 });
+      // 6. Muzzle brake crack — sharp secondary transient
+      noiseBurst({ duration: 0.008, gain: 0.5, freq: 5000, Q: 0.3,
+        filterType: 'highpass', distortion: 50, delay: 0.003 });
+      // 7. Sub-bass concussion — heavier than pistol (bigger cartridge)
+      resTone({ freq: 55, freqEnd: 20, duration: 0.1, gain: 0.5, type: 'sine' });
+      // 8. Bolt carrier cycling
+      setTimeout(function() {
+        metallicClick(1200, 0.08);
+        setTimeout(function() { metallicClick(1800, 0.06); }, 25);
+      }, 45);
+      // 9. Extended reverb tail — rifle report carries further
+      noiseBurst({ duration: 0.22, gain: 0.07, freq: 700, freqEnd: 250,
+        Q: 0.3, delay: 0.015, attack: 0.012 });
+      noiseBurst({ duration: 0.14, gain: 0.04, freq: 2000, freqEnd: 800,
+        Q: 0.5, delay: 0.03, attack: 0.015 });
+    },
+
+    // --- Realistic 12-Gauge Shotgun (Nova) ---
+    // Modeled after 12ga pump-action: massive boom, broadband blast, pump rack
+    shotgunShot: function() {
+      // 1. Initial blast — loudest, broadest of all weapons
+      noiseBurst({ duration: 0.015, gain: 1.1, freq: 2500, Q: 0.3,
+        filterType: 'highpass', distortion: 70 });
+      // 2. Low-frequency boom — dominant character of 12-gauge
+      noiseBurst({ duration: 0.14, gain: 0.75, freq: 500, freqEnd: 80,
+        filterType: 'lowpass', Q: 0.5, distortion: 20 });
+      // 3. Mid-frequency blast body — the "wall of sound"
+      noiseBurst({ duration: 0.12, gain: 0.65, freq: 1200, freqEnd: 250,
+        Q: 0.6, distortion: 15 });
+      // 4. High-frequency scatter — represents pellet spread and wad separation
+      noiseBurst({ duration: 0.05, gain: 0.35, freq: 4500, freqEnd: 1500,
+        Q: 0.5, delay: 0.003 });
+      // 5. Report tone — deep, boomy barrel resonance
+      resTone({ freq: 350, freqEnd: 40, duration: 0.1, gain: 0.45,
+        type: 'sawtooth', filterFreq: 2000, filterEnd: 200 });
+      // 6. Sub-bass pressure wave — the chest-thumping thud
+      resTone({ freq: 40, freqEnd: 15, duration: 0.13, gain: 0.6, type: 'sine' });
+      // 7. Chamber resonance — hollow barrel ring
+      resTone({ freq: 180, freqEnd: 60, duration: 0.08, gain: 0.2,
+        type: 'triangle', delay: 0.005 });
+      // 8. Pump action rack — two-part delayed mechanical (slide back + forward)
+      setTimeout(function() {
+        metallicClick(900, 0.12);
+        var c2 = ensureCtx(); var t2 = c2.currentTime;
+        var pBuf = getNoiseBuffer(0.05);
+        var pn = c2.createBufferSource(); pn.buffer = pBuf;
+        var pg = c2.createGain(); var pf = c2.createBiquadFilter();
+        pf.type = 'bandpass'; pf.frequency.value = 1500; pf.Q.value = 2;
+        pg.gain.setValueAtTime(0.1, t2);
+        pg.gain.exponentialRampToValueAtTime(0.001, t2 + 0.04);
+        pn.connect(pf); pf.connect(pg); pg.connect(masterGain);
+        pn.onended = function() {
+          try { pn.disconnect(); } catch(e) {}
+          try { pf.disconnect(); } catch(e) {}
+          try { pg.disconnect(); } catch(e) {}
+        };
+        pn.start(t2); pn.stop(t2 + 0.05);
+        setTimeout(function() { metallicClick(1100, 0.14); }, 120);
+      }, 200);
+      // 9. Heavy reverb tail — shotgun booms echo longest
+      noiseBurst({ duration: 0.3, gain: 0.09, freq: 600, freqEnd: 200,
+        Q: 0.3, delay: 0.02, attack: 0.015 });
+      noiseBurst({ duration: 0.2, gain: 0.05, freq: 1500, freqEnd: 500,
+        Q: 0.4, delay: 0.04, attack: 0.02 });
+      // 10. Ultra-low tail rumble
+      resTone({ freq: 30, freqEnd: 12, duration: 0.2, gain: 0.25,
+        type: 'sine', delay: 0.01 });
+    },
+
+    // --- Realistic .338 Lapua Magnum (AWP) ---
+    // Heaviest weapon: supersonic crack, massive muzzle blast, deep sub-bass, extended reverb
+    awpShot: function() {
+      // 1. Supersonic crack — extreme distortion, the loudest transient
+      noiseBurst({ duration: 0.015, gain: 1.2, freq: 4500, Q: 0.3,
+        filterType: 'highpass', distortion: 80 });
+      // 2. Massive muzzle blast — dominant heavy bark
+      noiseBurst({ duration: 0.1, gain: 0.85, freq: 1200, freqEnd: 200,
+        Q: 0.5, distortion: 30 });
+      // 3. Low-frequency boom — deep, heavy rifle thud
+      noiseBurst({ duration: 0.15, gain: 0.7, freq: 600, freqEnd: 80,
+        filterType: 'lowpass', Q: 0.6, distortion: 15 });
+      // 4. Muzzle brake side-blast — sharp secondary crack
+      noiseBurst({ duration: 0.01, gain: 0.6, freq: 5500, Q: 0.3,
+        filterType: 'highpass', distortion: 60, delay: 0.004 });
+      // 5. Report tone — deeper and angrier than any other weapon
+      resTone({ freq: 400, freqEnd: 35, duration: 0.08, gain: 0.5,
+        type: 'sawtooth', filterFreq: 3000, filterEnd: 200 });
+      // 6. Deep sub-bass pressure wave — chest-thumping
+      resTone({ freq: 35, freqEnd: 12, duration: 0.18, gain: 0.7, type: 'sine' });
+      // 7. High-frequency scatter
+      noiseBurst({ duration: 0.03, gain: 0.25, freq: 7000, freqEnd: 3000,
+        filterType: 'highpass', delay: 0.005 });
+      // 8. Extended reverb tail — AWP echo carries furthest
+      noiseBurst({ duration: 0.35, gain: 0.1, freq: 800, freqEnd: 200,
+        Q: 0.3, delay: 0.02, attack: 0.015 });
+      noiseBurst({ duration: 0.25, gain: 0.06, freq: 2000, freqEnd: 600,
+        Q: 0.4, delay: 0.04, attack: 0.02 });
+      // 9. Distance echo — delayed reflection
+      noiseBurst({ duration: 0.15, gain: 0.04, freq: 500, freqEnd: 200,
+        Q: 0.5, delay: 0.12, attack: 0.02 });
+      // 10. Ultra-low rumble tail
+      resTone({ freq: 25, freqEnd: 10, duration: 0.25, gain: 0.35,
+        type: 'sine', delay: 0.01 });
+    },
+
+    // --- Bolt Cycle (AWP bolt-action) ---
+    boltCycle: function() {
+      // 1. Bolt lift — clunk
+      metallicClick(600, 0.18);
+      // 2. Pull-back scrape
+      setTimeout(function() {
+        noiseBurst({ duration: 0.06, gain: 0.12, freq: 1800, freqEnd: 800,
+          Q: 1.5, filterType: 'bandpass' });
+        metallicClick(900, 0.1);
+      }, 80);
+      // 3. Push-forward
+      setTimeout(function() {
+        noiseBurst({ duration: 0.05, gain: 0.1, freq: 1200, freqEnd: 600,
+          Q: 1, filterType: 'bandpass' });
+      }, 220);
+      // 4. Lock-down — solid clunk
+      setTimeout(function() {
+        metallicClick(700, 0.2);
+        metallicClick(1100, 0.08);
+      }, 340);
+    },
+
+    // --- Scope Zoom ---
+    scopeZoom: function() {
+      // Soft metallic click
+      metallicClick(3000, 0.06);
+      // Subtle lens tone
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var osc = c.createOscillator();
+      var g = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, t);
+      osc.frequency.exponentialRampToValueAtTime(800, t + 0.05);
+      g.gain.setValueAtTime(0.04, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { g.disconnect(); } catch(e) {}
+      };
+      osc.start(t);
+      osc.stop(t + 0.07);
+    },
+
+    knifeSlash: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      // Whoosh — swept noise
+      var buf = getNoiseBuffer(0.2);
+      var noise = c.createBufferSource();
+      noise.buffer = buf;
+      var noiseGain = c.createGain();
+      var filter = c.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(3000, t);
+      filter.frequency.exponentialRampToValueAtTime(800, t + 0.18);
+      filter.Q.value = 2;
+      noiseGain.gain.setValueAtTime(0.3, t);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(masterGain);
+      noise.onended = function() {
+        try { noise.disconnect(); } catch(e) {}
+        try { filter.disconnect(); } catch(e) {}
+        try { noiseGain.disconnect(); } catch(e) {}
+      };
+      noise.start(t);
+      noise.stop(t + 0.21);
+      // Tonal swoosh
+      var osc = c.createOscillator();
+      var gain = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, t);
+      osc.frequency.exponentialRampToValueAtTime(150, t + 0.15);
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      osc.start(t);
+      osc.stop(t + 0.16);
+    },
+
+    knifeHit: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      // Low thud — 80Hz sine, short decay
+      var thud = c.createOscillator();
+      var thudGain = c.createGain();
+      thud.type = 'sine';
+      thud.frequency.value = 80;
+      thudGain.gain.setValueAtTime(0.4, t);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      thud.connect(thudGain);
+      thudGain.connect(masterGain);
+      thud.onended = function() {
+        try { thud.disconnect(); } catch(e) {}
+        try { thudGain.disconnect(); } catch(e) {}
+      };
+      thud.start(t);
+      thud.stop(t + 0.13);
+      // Sharp transient — noise burst, high-pass
+      var buf = getNoiseBuffer(0.06);
+      var snap = c.createBufferSource();
+      snap.buffer = buf;
+      var snapFilter = c.createBiquadFilter();
+      snapFilter.type = 'highpass';
+      snapFilter.frequency.value = 2000;
+      var snapGain = c.createGain();
+      snapGain.gain.setValueAtTime(0.35, t);
+      snapGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      snap.connect(snapFilter);
+      snapFilter.connect(snapGain);
+      snapGain.connect(masterGain);
+      snap.onended = function() {
+        try { snap.disconnect(); } catch(e) {}
+        try { snapFilter.disconnect(); } catch(e) {}
+        try { snapGain.disconnect(); } catch(e) {}
+      };
+      snap.start(t);
+      snap.stop(t + 0.07);
+      // Wet slap texture — mid-frequency noise
+      var buf2 = getNoiseBuffer(0.1);
+      var slap = c.createBufferSource();
+      slap.buffer = buf2;
+      var slapFilter = c.createBiquadFilter();
+      slapFilter.type = 'bandpass';
+      slapFilter.frequency.value = 600;
+      slapFilter.Q.value = 3;
+      var slapGain = c.createGain();
+      slapGain.gain.setValueAtTime(0.2, t + 0.01);
+      slapGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+      slap.connect(slapFilter);
+      slapFilter.connect(slapGain);
+      slapGain.connect(masterGain);
+      slap.onended = function() {
+        try { slap.disconnect(); } catch(e) {}
+        try { slapFilter.disconnect(); } catch(e) {}
+        try { slapGain.disconnect(); } catch(e) {}
+      };
+      slap.start(t);
+      slap.stop(t + 0.11);
+    },
+
+    hitMarker: function() {
+      // Crisp double ding
+      tone(2000, 0.05, 0.3, 'square');
+      setTimeout(function() { tone(2600, 0.04, 0.25, 'square'); }, 25);
+      // Add metallic ping
+      setTimeout(function() { metallicClick(3200, 0.12); }, 10);
+    },
+
+    kill: function() {
+      // Satisfying ascending ding-ding-ding
+      tone(1400, 0.06, 0.3, 'square');
+      setTimeout(function() { tone(1800, 0.06, 0.28, 'square'); }, 45);
+      setTimeout(function() { tone(2400, 0.1, 0.25, 'square'); }, 90);
+      // Bass confirmation thud
+      setTimeout(function() { tone(120, 0.08, 0.2, 'sine'); }, 30);
+    },
+
+    reloadMagOut: function() {
+      // Metallic click + slide sound
+      metallicClick(800, 0.12);
+      noiseBurst({ freq: 1200, duration: 0.04, gain: 0.08, filterType: 'bandpass', delay: 0.02 });
+    },
+    reloadMagIn: function() {
+      // Thunk of magazine seating
+      noiseBurst({ freq: 300, duration: 0.06, gain: 0.15, filterType: 'lowpass' });
+      metallicClick(600, 0.1);
+    },
+    reloadBoltRack: function() {
+      // Metallic rack
+      metallicClick(1000, 0.15);
+      noiseBurst({ freq: 2000, duration: 0.06, gain: 0.06, filterType: 'highpass', delay: 0.04 });
+      metallicClick(800, 0.12);
+    },
+    reload: function() {
+      // Mag release click
+      metallicClick(800, 0.2);
+      // Mag sliding out
+      setTimeout(function() {
+        var c = ensureCtx();
+        var t = c.currentTime;
+        var buf = getNoiseBuffer(0.08);
+        var n = c.createBufferSource();
+        n.buffer = buf;
+        var g = c.createGain();
+        var f = c.createBiquadFilter();
+        f.type = 'highpass';
+        f.frequency.value = 2000;
+        g.gain.setValueAtTime(0.12, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+        n.connect(f);
+        f.connect(g);
+        g.connect(masterGain);
+        n.onended = function() {
+          try { n.disconnect(); } catch(e) {}
+          try { f.disconnect(); } catch(e) {}
+          try { g.disconnect(); } catch(e) {}
+        };
+        n.start(t);
+        n.stop(t + 0.09);
+      }, 120);
+      // New mag insertion click
+      setTimeout(function() { metallicClick(1000, 0.22); }, 350);
+      // Bolt/slide rack
+      setTimeout(function() { metallicClick(600, 0.25); }, 500);
+      setTimeout(function() { metallicClick(900, 0.18); }, 550);
+    },
+
+    playerHurt: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      // Impact thud
+      var osc = c.createOscillator();
+      var gain = c.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(250, t);
+      osc.frequency.exponentialRampToValueAtTime(50, t + 0.15);
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      osc.start(t);
+      osc.stop(t + 0.21);
+      // Pain ringing
+      var ring = c.createOscillator();
+      var ringGain = c.createGain();
+      ring.type = 'sine';
+      ring.frequency.setValueAtTime(3500, t);
+      ring.frequency.exponentialRampToValueAtTime(2000, t + 0.3);
+      ringGain.gain.setValueAtTime(0.08, t);
+      ringGain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      ring.connect(ringGain);
+      ringGain.connect(masterGain);
+      ring.onended = function() {
+        try { ring.disconnect(); } catch(e) {}
+        try { ringGain.disconnect(); } catch(e) {}
+      };
+      ring.start(t);
+      ring.stop(t + 0.31);
+    },
+
+    roundStart: function() {
+      // Dramatic stinger — detuned square waves + rising noise sweep
+      var c = ensureCtx();
+      var t = c.currentTime;
+      // Low square wave
+      var osc1 = c.createOscillator();
+      var g1 = c.createGain();
+      osc1.type = 'square';
+      osc1.frequency.setValueAtTime(150, t);
+      g1.gain.setValueAtTime(0.15, t);
+      g1.gain.linearRampToValueAtTime(0.18, t + 0.05);
+      g1.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      osc1.connect(g1);
+      g1.connect(masterGain);
+      osc1.onended = function() {
+        try { osc1.disconnect(); } catch(e) {}
+        try { g1.disconnect(); } catch(e) {}
+      };
+      osc1.start(t);
+      osc1.stop(t + 0.42);
+      // Detuned higher square wave
+      var osc2 = c.createOscillator();
+      var g2 = c.createGain();
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(200, t);
+      g2.gain.setValueAtTime(0.12, t);
+      g2.gain.linearRampToValueAtTime(0.15, t + 0.05);
+      g2.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+      osc2.connect(g2);
+      g2.connect(masterGain);
+      osc2.onended = function() {
+        try { osc2.disconnect(); } catch(e) {}
+        try { g2.disconnect(); } catch(e) {}
+      };
+      osc2.start(t);
+      osc2.stop(t + 0.4);
+      // Rising filtered noise sweep
+      noiseBurst({ duration: 0.3, gain: 0.1, freq: 500, freqEnd: 3000,
+        Q: 1.5, filterType: 'bandpass', attack: 0.05 });
+    },
+
+    roundStartStinger: function() { Sound.roundStart(); },
+
+    roundWin: function() {
+      // Victory fanfare
+      tone(523, 0.14, 0.28, 'sine');
+      setTimeout(function() { tone(659, 0.14, 0.28, 'sine'); }, 130);
+      setTimeout(function() { tone(784, 0.14, 0.28, 'sine'); }, 260);
+      setTimeout(function() { tone(1047, 0.35, 0.35, 'sine'); }, 400);
+      // Harmony layer
+      setTimeout(function() { tone(659, 0.35, 0.15, 'sine'); }, 400);
+    },
+
+    roundLose: function() {
+      // Descending defeat
+      tone(440, 0.22, 0.28, 'sine');
+      setTimeout(function() { tone(370, 0.22, 0.26, 'sine'); }, 220);
+      setTimeout(function() { tone(294, 0.4, 0.3, 'sine'); }, 440);
+      // Dissonant layer
+      setTimeout(function() { tone(277, 0.4, 0.12, 'sine'); }, 440);
+    },
+
+    buy: function() {
+      metallicClick(1200, 0.15);
+      setTimeout(function() { tone(1000, 0.06, 0.15, 'sine'); }, 50);
+      setTimeout(function() { tone(1300, 0.08, 0.12, 'sine'); }, 90);
+    },
+
+    switchWeapon: function() {
+      // Weapon draw — two metallic clicks
+      metallicClick(700, 0.15);
+      setTimeout(function() { metallicClick(1100, 0.12); }, 50);
+    },
+
+    enemyShot: function() {
+      // Distant/muffled gunshot — low-passed, less transient, softer
+      noiseBurst({ duration: 0.008, gain: 0.25, freq: 2000, Q: 0.5,
+        filterType: 'highpass', distortion: 15 });
+      noiseBurst({ duration: 0.06, gain: 0.18, freq: 800, freqEnd: 200,
+        Q: 0.7 });
+      resTone({ freq: 350, freqEnd: 80, duration: 0.05, gain: 0.12,
+        type: 'sawtooth', filterFreq: 1500, filterEnd: 300 });
+      noiseBurst({ duration: 0.1, gain: 0.04, freq: 500, freqEnd: 200,
+        Q: 0.4, delay: 0.01, attack: 0.008 });
+    },
+
+    enemyReload: function() {
+      // Distant mag change — muffled metallic clicks
+      metallicClick(600, 0.08);
+      setTimeout(function() {
+        noiseBurst({ duration: 0.05, gain: 0.06, freq: 1500, Q: 1,
+          filterType: 'highpass', delay: 0 });
+      }, 100);
+      setTimeout(function() { metallicClick(800, 0.1); }, 280);
+      setTimeout(function() { metallicClick(500, 0.09); }, 400);
+    },
+
+    empty: function() {
+      // Dry click
+      metallicClick(500, 0.2);
+    },
+
+    footstep: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var buf = getNoiseBuffer(0.06);
+      var n = c.createBufferSource();
+      n.buf = buf;
+      n.buffer = buf;
+      var g = c.createGain();
+      var f = c.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = 600;
+      g.gain.setValueAtTime(0.08, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      n.connect(f);
+      f.connect(g);
+      g.connect(masterGain);
+      n.onended = function() {
+        try { n.disconnect(); } catch(e) {}
+        try { f.disconnect(); } catch(e) {}
+        try { g.disconnect(); } catch(e) {}
+      };
+      n.start(t);
+      n.stop(t + 0.07);
+    },
+
+    grenadeThrow: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      // Whoosh — rising swept noise
+      var buf = getNoiseBuffer(0.25);
+      var noise = c.createBufferSource();
+      noise.buffer = buf;
+      var ng = c.createGain();
+      var nf = c.createBiquadFilter();
+      nf.type = 'bandpass';
+      nf.frequency.setValueAtTime(800, t);
+      nf.frequency.exponentialRampToValueAtTime(3000, t + 0.2);
+      nf.Q.value = 1.5;
+      ng.gain.setValueAtTime(0.25, t);
+      ng.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      noise.connect(nf);
+      nf.connect(ng);
+      ng.connect(masterGain);
+      noise.onended = function() {
+        try { noise.disconnect(); } catch(e) {}
+        try { nf.disconnect(); } catch(e) {}
+        try { ng.disconnect(); } catch(e) {}
+      };
+      noise.start(t);
+      noise.stop(t + 0.26);
+      // Effort grunt tone
+      var osc = c.createOscillator();
+      var og = c.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(80, t + 0.1);
+      og.gain.setValueAtTime(0.08, t);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      osc.connect(og);
+      og.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { og.disconnect(); } catch(e) {}
+      };
+      osc.start(t);
+      osc.stop(t + 0.13);
+      // Pin pull click
+      metallicClick(2000, 0.12);
+    },
+
+    grenadeBounce: function() {
+      // Short metallic clink
+      metallicClick(1800, 0.1);
+      setTimeout(function() { metallicClick(2200, 0.06); }, 15);
+    },
+
+    headshotDink: function() {
+      // Metallic dink — CS-style headshot ping
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var osc = c.createOscillator();
+      var g = c.createGain();
+      var f = c.createBiquadFilter();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1800, t);
+      osc.frequency.exponentialRampToValueAtTime(1200, t + 0.03);
+      f.type = 'bandpass';
+      f.frequency.value = 1500;
+      f.Q.value = 6;
+      g.gain.setValueAtTime(0.45, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      osc.connect(f);
+      // Light distortion
+      var ws = c.createWaveShaper();
+      ws.curve = getDistortionCurve(8);
+      ws.oversample = '2x';
+      f.connect(ws);
+      ws.connect(g);
+      g.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { f.disconnect(); } catch(e) {}
+        try { ws.disconnect(); } catch(e) {}
+        try { g.disconnect(); } catch(e) {}
+      };
+      osc.start(t);
+      osc.stop(t + 0.07);
+      // Secondary ring
+      var osc2 = c.createOscillator();
+      var g2 = c.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(2400, t);
+      g2.gain.setValueAtTime(0.2, t);
+      g2.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+      osc2.connect(g2);
+      g2.connect(masterGain);
+      osc2.onended = function() {
+        try { osc2.disconnect(); } catch(e) {}
+        try { g2.disconnect(); } catch(e) {}
+      };
+      osc2.start(t);
+      osc2.stop(t + 0.05);
+    },
+
+    hitmarkerTick: function() {
+      // Very short noise tick
+      noiseBurst({ duration: 0.015, gain: 0.2, freq: 4000, Q: 0.8, filterType: 'highpass' });
+    },
+
+    killStreak: function(tier) {
+      // Escalating chord — higher pitch per tier
+      var baseFreq = 600 + tier * 100;
+      tone(baseFreq, 0.12, 0.25, 'sine');
+      setTimeout(function() { tone(baseFreq * 1.25, 0.12, 0.25, 'sine'); }, 60);
+      setTimeout(function() { tone(baseFreq * 1.5, 0.18, 0.3, 'sine'); }, 120);
+    },
+
+    rankUp: function() {
+      // Ascending arpeggio — triumphant rank-up
+      var notes = [523, 659, 784, 1047, 1319];
+      notes.forEach(function(freq, i) {
+        setTimeout(function() {
+          tone(freq, 0.2, 0.25, 'sine');
+          if (i > 1) tone(freq * 0.5, 0.2, 0.1, 'sine'); // harmony
+        }, i * 100);
+      });
+    },
+
+    grenadeExplode: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+
+      // Layer 1: Massive bass boom
+      var boom = c.createOscillator();
+      var boomGain = c.createGain();
+      boom.type = 'sine';
+      boom.frequency.setValueAtTime(60, t);
+      boom.frequency.exponentialRampToValueAtTime(20, t + 0.3);
+      boomGain.gain.setValueAtTime(0.9, t);
+      boomGain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      boom.connect(boomGain);
+      boomGain.connect(masterGain);
+      boom.onended = function() {
+        try { boom.disconnect(); } catch(e) {}
+        try { boomGain.disconnect(); } catch(e) {}
+      };
+      boom.start(t);
+      boom.stop(t + 0.41);
+
+      // Layer 2: Mid-frequency crunch
+      var crunch = c.createOscillator();
+      var crunchGain = c.createGain();
+      var crunchFilter = c.createBiquadFilter();
+      crunch.type = 'sawtooth';
+      crunch.frequency.setValueAtTime(300, t);
+      crunch.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+      crunchFilter.type = 'lowpass';
+      crunchFilter.frequency.setValueAtTime(2000, t);
+      crunchFilter.frequency.exponentialRampToValueAtTime(100, t + 0.25);
+      crunchGain.gain.setValueAtTime(0.7, t);
+      crunchGain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      crunch.connect(crunchFilter);
+      crunchFilter.connect(crunchGain);
+      crunchGain.connect(masterGain);
+      crunch.onended = function() {
+        try { crunch.disconnect(); } catch(e) {}
+        try { crunchFilter.disconnect(); } catch(e) {}
+        try { crunchGain.disconnect(); } catch(e) {}
+      };
+      crunch.start(t);
+      crunch.stop(t + 0.31);
+
+      // Layer 3: Loud noise burst
+      var nBuf = getNoiseBuffer(0.5);
+      var noise = c.createBufferSource();
+      noise.buffer = nBuf;
+      var ng = c.createGain();
+      var nf = c.createBiquadFilter();
+      nf.type = 'lowpass';
+      nf.frequency.setValueAtTime(4000, t);
+      nf.frequency.exponentialRampToValueAtTime(200, t + 0.4);
+      ng.gain.setValueAtTime(0.8, t);
+      ng.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      noise.connect(nf);
+      nf.connect(ng);
+      ng.connect(masterGain);
+      noise.onended = function() {
+        try { noise.disconnect(); } catch(e) {}
+        try { nf.disconnect(); } catch(e) {}
+        try { ng.disconnect(); } catch(e) {}
+      };
+      noise.start(t);
+      noise.stop(t + 0.51);
+
+      // Layer 4: Sub-bass pressure wave
+      var sub = c.createOscillator();
+      var subGain = c.createGain();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(35, t);
+      sub.frequency.exponentialRampToValueAtTime(15, t + 0.15);
+      subGain.gain.setValueAtTime(0.8, t);
+      subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      sub.connect(subGain);
+      subGain.connect(masterGain);
+      sub.onended = function() {
+        try { sub.disconnect(); } catch(e) {}
+        try { subGain.disconnect(); } catch(e) {}
+      };
+      sub.start(t);
+      sub.stop(t + 0.21);
+
+      // Layer 5: Debris / rattle tail
+      var tailBuf = getNoiseBuffer(0.8);
+      var tail = c.createBufferSource();
+      tail.buffer = tailBuf;
+      var tg = c.createGain();
+      var tf = c.createBiquadFilter();
+      tf.type = 'highpass';
+      tf.frequency.value = 800;
+      tg.gain.setValueAtTime(0, t);
+      tg.gain.linearRampToValueAtTime(0.2, t + 0.05);
+      tg.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+      tail.connect(tf);
+      tf.connect(tg);
+      tg.connect(masterGain);
+      tail.onended = function() {
+        try { tail.disconnect(); } catch(e) {}
+        try { tf.disconnect(); } catch(e) {}
+        try { tg.disconnect(); } catch(e) {}
+      };
+      tail.start(t);
+      tail.stop(t + 0.71);
+
+      // Layer 6: Ear ring (tinnitus effect)
+      var ring = c.createOscillator();
+      var ringGain = c.createGain();
+      ring.type = 'sine';
+      ring.frequency.setValueAtTime(4200, t);
+      ring.frequency.exponentialRampToValueAtTime(3800, t + 0.8);
+      ringGain.gain.setValueAtTime(0, t);
+      ringGain.gain.linearRampToValueAtTime(0.06, t + 0.1);
+      ringGain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+      ring.connect(ringGain);
+      ringGain.connect(masterGain);
+      ring.onended = function() {
+        try { ring.disconnect(); } catch(e) {}
+        try { ringGain.disconnect(); } catch(e) {}
+      };
+      ring.start(t);
+      ring.stop(t + 0.81);
+    },
+
+    bombTick: function(timeRemaining) {
+      var freq = 800 + (40 - Math.max(0, timeRemaining)) * 20;
+      tone(freq, 0.03, 0.15, 'square');
+    },
+
+    bombPlant: function() {
+      metallicClick(800, 0.15);
+      setTimeout(function() { metallicClick(600, 0.12); }, 80);
+      setTimeout(function() { tone(300, 0.3, 0.15, 'sawtooth'); }, 160);
+    },
+
+    bombDefuse: function() {
+      tone(440, 0.08, 0.2, 'sine');
+      setTimeout(function() { tone(660, 0.08, 0.2, 'sine'); }, 100);
+      setTimeout(function() { tone(880, 0.2, 0.25, 'sine'); }, 200);
+    },
+
+    radioOpen: function() {
+      // Heavy squelch burst — 3 layers for thick radio open
+      noiseBurst({ duration: 0.12, gain: 0.45, freq: 2800, freqEnd: 1000,
+        Q: 2.0, filterType: 'bandpass', distortion: 25 });
+      noiseBurst({ duration: 0.08, gain: 0.25, freq: 5000, freqEnd: 1800,
+        Q: 1.0, filterType: 'bandpass', delay: 0.01, distortion: 10 });
+      // Low thump
+      noiseBurst({ duration: 0.04, gain: 0.2, freq: 400, freqEnd: 200,
+        Q: 0.5, filterType: 'bandpass', delay: 0.005 });
+      metallicClick(3500, 0.18);
+    },
+
+    radioClose: function() {
+      // Aggressive close — slightly shorter than open
+      noiseBurst({ duration: 0.09, gain: 0.3, freq: 2200, freqEnd: 800,
+        Q: 1.8, filterType: 'bandpass', distortion: 15 });
+      noiseBurst({ duration: 0.06, gain: 0.15, freq: 4000, freqEnd: 1200,
+        Q: 0.8, filterType: 'bandpass', delay: 0.01, distortion: 8 });
+      noiseBurst({ duration: 0.03, gain: 0.15, freq: 350, freqEnd: 150,
+        Q: 0.5, filterType: 'bandpass', delay: 0.005 });
+      metallicClick(3000, 0.12);
+    },
+
+    radioVoice: function(text, force) {
+      var now = Date.now();
+      if (!force && now - _voiceCooldown < 2000) return false;
+      _voiceCooldown = now;
+
+      this.radioOpen();
+
+      var self = this;
+      setTimeout(function() {
+        var utter = new SpeechSynthesisUtterance(text);
+        if (_selectedVoice) utter.voice = _selectedVoice;
+        utter.rate = 1.25;
+        utter.pitch = 0.4;
+        utter.volume = 0.45; // Low so radio texture dominates
+
+        var t = ctx ? ctx.currentTime : 0;
+        // Noise layers
+        if (_radioNoiseGain) _radioNoiseGain.gain.setValueAtTime(0.036, t);
+        if (_radioNoiseLowGain) _radioNoiseLowGain.gain.setValueAtTime(0.012, t);
+        if (_radioNoiseHighGain) _radioNoiseHighGain.gain.setValueAtTime(0.018, t);
+        // Carrier tone — the key to walkie-talkie character
+        if (_radioCarrierGain) _radioCarrierGain.gain.setValueAtTime(0.015, t);
+        // LFO modulation on noise for breathing/pulsing
+        if (_radioLfoGain) _radioLfoGain.gain.setValueAtTime(0.008, t);
+
+        // Random crackle/pops
+        if (_radioCrackleInterval) clearInterval(_radioCrackleInterval);
+        _radioCrackleInterval = setInterval(function() {
+          if (!ctx) return;
+          noiseBurst({ duration: 0.01 + Math.random() * 0.02, gain: 0.024 + Math.random() * 0.036,
+            freq: 800 + Math.random() * 2000, Q: 0.5 + Math.random() * 2,
+            filterType: 'bandpass', distortion: 10 + Math.random() * 20 });
+        }, 120 + Math.random() * 180);
+
+        utter.onend = function() {
+          if (ctx) {
+            var te = ctx.currentTime;
+            if (_radioNoiseGain) _radioNoiseGain.gain.setTargetAtTime(0, te, 0.06);
+            if (_radioNoiseLowGain) _radioNoiseLowGain.gain.setTargetAtTime(0, te, 0.04);
+            if (_radioNoiseHighGain) _radioNoiseHighGain.gain.setTargetAtTime(0, te, 0.04);
+            if (_radioCarrierGain) _radioCarrierGain.gain.setTargetAtTime(0, te, 0.03);
+            if (_radioLfoGain) _radioLfoGain.gain.setTargetAtTime(0, te, 0.03);
+          }
+          if (_radioCrackleInterval) { clearInterval(_radioCrackleInterval); _radioCrackleInterval = null; }
+          self.radioClose();
+        };
+        speechSynthesis.speak(utter);
+      }, 100);
+
+      return true;
+    },
+
+    flashBang: function() {
+      noiseBurst({ freq: 4000, duration: 0.2, gain: 0.3, filterType: 'highpass', delay: 0 });
+      resTone({ freq: 4000, duration: 0.15, gain: 0.2, delay: 0 });
+      noiseBurst({ freq: 8000, duration: 0.1, gain: 0.15, filterType: 'highpass', delay: 0.02 });
+    },
+
+    smokePop: function() {
+      noiseBurst({ freq: 300, duration: 0.3, gain: 0.12, filterType: 'lowpass', delay: 0 });
+      noiseBurst({ freq: 1500, duration: 0.15, gain: 0.06, filterType: 'bandpass', delay: 0.05 });
+    },
+
+    smgShot: function() {
+      noiseBurst({ freq: 2500, duration: 0.03, gain: 0.18, filterType: 'bandpass', delay: 0 });
+      noiseBurst({ freq: 800, duration: 0.05, gain: 0.14, filterType: 'lowpass', delay: 0 });
+      resTone({ freq: 600, duration: 0.04, gain: 0.08, delay: 0 });
+      resTone({ freq: 1200, duration: 0.02, gain: 0.05, delay: 0.01 });
+      noiseBurst({ freq: 4000, duration: 0.015, gain: 0.06, filterType: 'highpass', delay: 0.005 });
+    },
+
+    announcer: function(text) {
+      speechSynthesis.cancel();
+      if (_radioCrackleInterval) { clearInterval(_radioCrackleInterval); _radioCrackleInterval = null; }
+
+      var utter = new SpeechSynthesisUtterance(text);
+      if (_selectedVoice) utter.voice = _selectedVoice;
+      utter.rate = 1.0;
+      utter.pitch = 0.45;
+      utter.volume = 0.55;
+
+      if (ctx) {
+        var t = ctx.currentTime;
+        if (_radioNoiseGain) _radioNoiseGain.gain.setValueAtTime(0.021, t);
+        if (_radioNoiseLowGain) _radioNoiseLowGain.gain.setValueAtTime(0.006, t);
+        if (_radioNoiseHighGain) _radioNoiseHighGain.gain.setValueAtTime(0.009, t);
+        if (_radioCarrierGain) _radioCarrierGain.gain.setValueAtTime(0.01, t);
+        if (_radioLfoGain) _radioLfoGain.gain.setValueAtTime(0.005, t);
+      }
+      utter.onend = function() {
+        if (ctx) {
+          var te = ctx.currentTime;
+          if (_radioNoiseGain) _radioNoiseGain.gain.setTargetAtTime(0, te, 0.06);
+          if (_radioNoiseLowGain) _radioNoiseLowGain.gain.setTargetAtTime(0, te, 0.04);
+          if (_radioNoiseHighGain) _radioNoiseHighGain.gain.setTargetAtTime(0, te, 0.04);
+          if (_radioCarrierGain) _radioCarrierGain.gain.setTargetAtTime(0, te, 0.03);
+          if (_radioLfoGain) _radioLfoGain.gain.setTargetAtTime(0, te, 0.03);
+        }
+      };
+      speechSynthesis.speak(utter);
+    },
+
+    killDink: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, t);
+      var g = c.createGain();
+      g.gain.setValueAtTime(0.15, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      osc.connect(g); g.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { g.disconnect(); } catch(e) {}
+      };
+      osc.start(t); osc.stop(t + 0.08);
+    },
+    killDinkHeadshot: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var osc = c.createOscillator(); osc.type = 'sine';
+      osc.frequency.setValueAtTime(1800, t);
+      var g = c.createGain();
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+      osc.connect(g); g.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { g.disconnect(); } catch(e) {}
+      };
+      osc.start(t); osc.stop(t + 0.1);
+      var osc2 = c.createOscillator(); osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(3600, t);
+      var g2 = c.createGain();
+      g2.gain.setValueAtTime(0.06, t);
+      g2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      osc2.connect(g2); g2.connect(masterGain);
+      osc2.onended = function() {
+        try { osc2.disconnect(); } catch(e) {}
+        try { g2.disconnect(); } catch(e) {}
+      };
+      osc2.start(t); osc2.stop(t + 0.08);
+    },
+    killThump: function() {
+      noiseBurst({ freq: 150, freqEnd: 60, duration: 0.1, gain: 0.25,
+        filterType: 'lowpass', Q: 0.8, attack: 0.005 });
+    },
+    killThumpHeadshot: function() {
+      noiseBurst({ freq: 150, freqEnd: 50, duration: 0.12, gain: 0.3,
+        filterType: 'lowpass', Q: 0.8, attack: 0.005 });
+      // Sub-bass sine for extra weight
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(60, t);
+      var g = c.createGain();
+      g.gain.setValueAtTime(0.2, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      osc.connect(g); g.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { g.disconnect(); } catch(e) {}
+      };
+      osc.start(t); osc.stop(t + 0.12);
+    },
+    mvpSting: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var notes = [523.25, 659.25, 783.99];
+      for (var i = 0; i < notes.length; i++) {
+        var osc = c.createOscillator(); osc.type = 'triangle';
+        osc.frequency.setValueAtTime(notes[i], t + i * 0.15);
+        var g = c.createGain();
+        g.gain.setValueAtTime(0, t + i * 0.15);
+        g.gain.linearRampToValueAtTime(0.12, t + i * 0.15 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.3);
+        osc.connect(g); g.connect(masterGain);
+        osc.onended = function() {
+          try { osc.disconnect(); } catch(e) {}
+          try { g.disconnect(); } catch(e) {}
+        };
+        osc.start(t + i * 0.15);
+        osc.stop(t + i * 0.15 + 0.3);
+      }
+    },
+
+    footstepMetal: function() {
+      metallicClick(1200, 0.1);
+      noiseBurst({ freq: 3000, duration: 0.03, gain: 0.05, filterType: 'highpass' });
+    },
+    footstepWood: function() {
+      noiseBurst({ freq: 350, duration: 0.06, gain: 0.1, filterType: 'lowpass' });
+      noiseBurst({ freq: 1800, duration: 0.02, gain: 0.03, filterType: 'bandpass', delay: 0.01 });
+    },
+    footstepSand: function() {
+      noiseBurst({ freq: 300, duration: 0.08, gain: 0.06, filterType: 'lowpass' });
+    },
+    footstepWalk: function(surface) {
+      if (surface === 'metal') { this.footstepMetal(); return; }
+      if (surface === 'wood') { this.footstepWood(); return; }
+      if (surface === 'sand') { this.footstepSand(); return; }
+      noiseBurst({ freq: 500, duration: 0.05, gain: 0.08, filterType: 'bandpass', delay: 0 });
+    },
+    footstepSprint: function(surface) {
+      if (surface === 'metal') { this.footstepMetal(); return; }
+      if (surface === 'wood') { this.footstepWood(); return; }
+      if (surface === 'sand') { this.footstepSand(); return; }
+      noiseBurst({ freq: 600, duration: 0.06, gain: 0.15, filterType: 'bandpass', delay: 0 });
+      noiseBurst({ freq: 200, duration: 0.03, gain: 0.06, filterType: 'lowpass', delay: 0.01 });
+    },
+    footstepCrouch: function(surface) {
+      if (surface === 'metal') { this.footstepMetal(); return; }
+      if (surface === 'wood') { this.footstepWood(); return; }
+      if (surface === 'sand') { this.footstepSand(); return; }
+      noiseBurst({ freq: 450, duration: 0.04, gain: 0.03, filterType: 'bandpass', delay: 0 });
+    },
+    startAmbient: function(mapName) {
+      this.stopAmbient();
+      var c = ensureCtx();
+
+      // If AudioContext is suspended (no user gesture yet), defer until resumed
+      if (c.state === 'suspended') {
+        var self = this;
+        var _resumeHandler = function() {
+          document.removeEventListener('click', _resumeHandler);
+          document.removeEventListener('keydown', _resumeHandler);
+          document.removeEventListener('touchstart', _resumeHandler);
+          // Resume context on user gesture, then restart ambient
+          c.resume().then(function() { self.startAmbient(mapName); });
+        };
+        document.addEventListener('click', _resumeHandler);
+        document.addEventListener('keydown', _resumeHandler);
+        document.addEventListener('touchstart', _resumeHandler);
+        return;
+      }
+
+      _ambientGain = c.createGain();
+      _ambientGain.gain.value = 0;
+      _ambientGain.connect(masterGain);
+      _ambientGain.gain.linearRampToValueAtTime(0.04, c.currentTime + 2);
+
+      if (mapName === 'Dust') {
+        // Desert wind: brown noise, bandpass 100-400Hz, LFO volume
+        var buf = getNoiseBuffer(4);
+        var src = c.createBufferSource(); src.buffer = buf; src.loop = true;
+        var bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 250; bp.Q.value = 0.5;
+        var windG = c.createGain(); windG.gain.value = 0.4;
+        var lfo = c.createOscillator(); lfo.frequency.value = 0.15; lfo.type = 'sine';
+        var lfoGain = c.createGain(); lfoGain.gain.value = 0.008;
+        lfo.connect(lfoGain); lfoGain.connect(_ambientGain.gain);
+        src.connect(bp); bp.connect(windG); windG.connect(_ambientGain);
+        src.start(); lfo.start();
+        _ambientNodes.push(src, lfo);
+      } else if (mapName === 'Office') {
+        // Office hum: low-freq electrical hum
+        var osc = c.createOscillator(); osc.type = 'sine'; osc.frequency.value = 120;
+        var g = c.createGain(); g.gain.value = 0.08;
+        osc.connect(g); g.connect(_ambientGain);
+        osc.start();
+        _ambientNodes.push(osc);
+        // AC noise
+        var buf2 = getNoiseBuffer(4);
+        var src2 = c.createBufferSource(); src2.buffer = buf2; src2.loop = true;
+        var hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2000; hp.Q.value = 0.3;
+        var g2 = c.createGain(); g2.gain.value = 0.04;
+        src2.connect(hp); hp.connect(g2); g2.connect(_ambientGain);
+        src2.start();
+        _ambientNodes.push(src2);
+      } else if (mapName === 'Warehouse') {
+        // Industrial drone + metallic pings
+        var osc = c.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 60;
+        var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 200;
+        var g = c.createGain(); g.gain.value = 0.3;
+        osc.connect(lp); lp.connect(g); g.connect(_ambientGain);
+        osc.start();
+        _ambientNodes.push(osc);
+        // Random metallic pings via noise
+        var buf3 = getNoiseBuffer(4);
+        var src3 = c.createBufferSource(); src3.buffer = buf3; src3.loop = true;
+        var bp3 = c.createBiquadFilter(); bp3.type = 'bandpass'; bp3.frequency.value = 3000; bp3.Q.value = 8;
+        var g3 = c.createGain(); g3.gain.value = 0.1;
+        src3.connect(bp3); bp3.connect(g3); g3.connect(_ambientGain);
+        src3.start();
+        _ambientNodes.push(src3);
+      } else if (mapName === 'Bloodstrike') {
+        // Indoor arena: low electrical hum + ventilation
+        var osc4 = c.createOscillator(); osc4.type = 'sine'; osc4.frequency.value = 100;
+        var g4 = c.createGain(); g4.gain.value = 0.1;
+        osc4.connect(g4); g4.connect(_ambientGain);
+        osc4.start();
+        _ambientNodes.push(osc4);
+        // Ventilation noise
+        var buf4 = getNoiseBuffer(4);
+        var src4 = c.createBufferSource(); src4.buffer = buf4; src4.loop = true;
+        var lp4 = c.createBiquadFilter(); lp4.type = 'lowpass'; lp4.frequency.value = 800; lp4.Q.value = 0.5;
+        var gv4 = c.createGain(); gv4.gain.value = 0.3;
+        src4.connect(lp4); lp4.connect(gv4); gv4.connect(_ambientGain);
+        src4.start();
+        _ambientNodes.push(src4);
+      } else if (mapName === 'Italy') {
+        // Mediterranean wind
+        var buf5 = getNoiseBuffer(4);
+        var src5 = c.createBufferSource(); src5.buffer = buf5; src5.loop = true;
+        var bp5 = c.createBiquadFilter(); bp5.type = 'bandpass'; bp5.frequency.value = 300; bp5.Q.value = 0.4;
+        var g5 = c.createGain(); g5.gain.value = 0.35;
+        src5.connect(bp5); bp5.connect(g5); g5.connect(_ambientGain);
+        src5.start();
+        _ambientNodes.push(src5);
+      } else if (mapName === 'Aztec') {
+        // Jungle insects + birds
+        var buf6 = getNoiseBuffer(4);
+        var src6 = c.createBufferSource(); src6.buffer = buf6; src6.loop = true;
+        var bp6 = c.createBiquadFilter(); bp6.type = 'bandpass'; bp6.frequency.value = 4000; bp6.Q.value = 2;
+        var g6 = c.createGain(); g6.gain.value = 0.3;
+        src6.connect(bp6); bp6.connect(g6); g6.connect(_ambientGain);
+        src6.start();
+        _ambientNodes.push(src6);
+        // Bird-like chirps via high-pitched oscillator with LFO
+        var bird = c.createOscillator(); bird.type = 'sine'; bird.frequency.value = 2400;
+        var birdLfo = c.createOscillator(); birdLfo.frequency.value = 6; birdLfo.type = 'sine';
+        var birdLfoG = c.createGain(); birdLfoG.gain.value = 400;
+        birdLfo.connect(birdLfoG); birdLfoG.connect(bird.frequency);
+        var birdG = c.createGain(); birdG.gain.value = 0.04;
+        var birdEnvLfo = c.createOscillator(); birdEnvLfo.frequency.value = 0.3;
+        var birdEnvG = c.createGain(); birdEnvG.gain.value = 0.03;
+        birdEnvLfo.connect(birdEnvG); birdEnvG.connect(birdG.gain);
+        bird.connect(birdG); birdG.connect(_ambientGain);
+        bird.start(); birdLfo.start(); birdEnvLfo.start();
+        _ambientNodes.push(bird, birdLfo, birdEnvLfo);
+      } else {
+        // Default: subtle wind
+        var bufDef = getNoiseBuffer(4);
+        var srcDef = c.createBufferSource(); srcDef.buffer = bufDef; srcDef.loop = true;
+        var bpDef = c.createBiquadFilter(); bpDef.type = 'bandpass'; bpDef.frequency.value = 200; bpDef.Q.value = 0.3;
+        var gDef = c.createGain(); gDef.gain.value = 0.4;
+        srcDef.connect(bpDef); bpDef.connect(gDef); gDef.connect(_ambientGain);
+        srcDef.start();
+        _ambientNodes.push(srcDef);
+      }
+    },
+    stopAmbient: function() {
+      for (var i = 0; i < _ambientNodes.length; i++) {
+        try { _ambientNodes[i].stop(); } catch(e) {}
+        try { _ambientNodes[i].disconnect(); } catch(e) {}
+      }
+      _ambientNodes = [];
+      if (_ambientGain) { _ambientGain.disconnect(); _ambientGain = null; }
+    },
+
+    updateListener: function(camera) {
+      var c = ensureCtx();
+      var listener = c.listener;
+      if (listener.positionX) {
+        listener.positionX.value = camera.position.x;
+        listener.positionY.value = camera.position.y;
+        listener.positionZ.value = camera.position.z;
+        var fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        var up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+        listener.forwardX.value = fwd.x;
+        listener.forwardY.value = fwd.y;
+        listener.forwardZ.value = fwd.z;
+        listener.upX.value = up.x;
+        listener.upY.value = up.y;
+        listener.upZ.value = up.z;
+      } else if (listener.setPosition) {
+        var fwd2 = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        var up2 = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+        listener.setPosition(camera.position.x, camera.position.y, camera.position.z);
+        listener.setOrientation(fwd2.x, fwd2.y, fwd2.z, up2.x, up2.y, up2.z);
+      }
+    },
+
+    _createPanner: function(x, y, z, lifetime) {
+      var c = ensureCtx();
+      var panner = c.createPanner();
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = 5;
+      panner.maxDistance = 80;
+      panner.rolloffFactor = 1.2;
+      panner.setPosition(x, y, z);
+      // Auto-disconnect panner after sounds finish to prevent node accumulation
+      if (lifetime) {
+        setTimeout(function() {
+          try { panner.disconnect(); } catch(e) {}
+        }, lifetime);
+      }
+      return panner;
+    },
+
+    enemyShotSpatial: function(x, y, z, playerPos) {
+      var panner = this._createPanner(x, y, z, 300);
+      panner.connect(masterGain);
+      noiseBurst({ duration: 0.008, gain: 0.25, freq: 2000, Q: 0.5,
+        filterType: 'highpass', distortion: 15, destination: panner });
+      noiseBurst({ duration: 0.06, gain: 0.18, freq: 800, freqEnd: 200, Q: 0.7,
+        destination: panner });
+      resTone({ freq: 350, freqEnd: 80, duration: 0.05, gain: 0.12,
+        type: 'sawtooth', filterFreq: 1500, filterEnd: 300, destination: panner });
+      noiseBurst({ duration: 0.1, gain: 0.04, freq: 500, freqEnd: 200,
+        Q: 0.4, delay: 0.01, attack: 0.008, destination: panner });
+      // Distant echo
+      if (playerPos) {
+        var dx = x - playerPos.x, dy = y - playerPos.y, dz = z - playerPos.z;
+        var dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        this._createDistantEcho(x, y, z, dist);
+      }
+    },
+
+    botFootstep: function(x, y, z) {
+      var panner = this._createPanner(x, y, z, 150);
+      panner.connect(masterGain);
+      noiseBurst({ freq: 400, duration: 0.04, gain: 0.05, filterType: 'bandpass',
+        destination: panner });
+    },
+
+    landingThud: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var osc = c.createOscillator();
+      osc.frequency.setValueAtTime(80, t);
+      osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+      var g = c.createGain();
+      g.gain.setValueAtTime(0.15, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { g.disconnect(); } catch(e) {}
+      };
+      osc.start(t);
+      osc.stop(t + 0.12);
+      noiseBurst({ freq: 300, duration: 0.06, gain: 0.1, filterType: 'lowpass', delay: 0 });
+    },
+    // ── Kill Confirmation ─────────────────────────���────────
+    killConfirm: function() {
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var o1 = c.createOscillator();
+      o1.type = 'sine';
+      o1.frequency.value = 880;
+      var g1 = c.createGain();
+      g1.gain.setValueAtTime(0.15, t);
+      g1.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      o1.connect(g1); g1.connect(masterGain);
+      o1.onended = function() {
+        try { o1.disconnect(); } catch(e) {}
+        try { g1.disconnect(); } catch(e) {}
+      };
+      o1.start(t); o1.stop(t + 0.25);
+
+      var o2 = c.createOscillator();
+      o2.type = 'sine';
+      o2.frequency.value = 1320;
+      var g2 = c.createGain();
+      g2.gain.setValueAtTime(0.1, t + 0.05);
+      g2.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      o2.connect(g2); g2.connect(masterGain);
+      o2.onended = function() {
+        try { o2.disconnect(); } catch(e) {}
+        try { g2.disconnect(); } catch(e) {}
+      };
+      o2.start(t + 0.05); o2.stop(t + 0.3);
+    },
+    // ── Death Audio Fade ──────────────────────────────────
+    fadeToMuffled: function() {
+      var c = ensureCtx();
+      if (!this._deathFilter) {
+        this._deathFilter = c.createBiquadFilter();
+        this._deathFilter.type = 'lowpass';
+        this._deathFilter.frequency.value = 20000;
+      }
+      // Cancel any pending restoreAudio reconnect
+      if (this._restoreTimer) { clearTimeout(this._restoreTimer); this._restoreTimer = null; }
+      masterGain.disconnect();
+      masterGain.connect(this._deathFilter);
+      this._deathFilter.connect(compressor);
+      this._deathFilter.frequency.cancelScheduledValues(c.currentTime);
+      this._deathFilter.frequency.setValueAtTime(this._deathFilter.frequency.value, c.currentTime);
+      this._deathFilter.frequency.linearRampToValueAtTime(400, c.currentTime + 0.8);
+      masterGain.gain.cancelScheduledValues(c.currentTime);
+      masterGain.gain.setValueAtTime(masterGain.gain.value, c.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0.15, c.currentTime + 1.0);
+    },
+    restoreAudio: function() {
+      var c = ensureCtx();
+      if (this._deathFilter) {
+        this._deathFilter.frequency.cancelScheduledValues(c.currentTime);
+        this._deathFilter.frequency.setValueAtTime(this._deathFilter.frequency.value, c.currentTime);
+        this._deathFilter.frequency.linearRampToValueAtTime(20000, c.currentTime + 0.3);
+      }
+      masterGain.gain.cancelScheduledValues(c.currentTime);
+      masterGain.gain.setValueAtTime(masterGain.gain.value, c.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0.5, c.currentTime + 0.3);
+      var self = this;
+      if (this._restoreTimer) clearTimeout(this._restoreTimer);
+      this._restoreTimer = setTimeout(function() {
+        self._restoreTimer = null;
+        masterGain.disconnect();
+        masterGain.connect(compressor);
+        // Restore reverb send if active
+        if (self._reverbNode) {
+          masterGain.connect(self._reverbNode);
+        }
+      }, 400);
+    },
+    // ── Environment Reverb ────────────────────────────────
+    _getReverbConfig: function(mapName) {
+      var configs = {
+        dust:       { decay: 0.25, wet: 0.15 },
+        bloodstrike:{ decay: 0.3,  wet: 0.15 },
+        italy:      { decay: 0.5,  wet: 0.25 },
+        office:     { decay: 1.0,  wet: 0.35 },
+        warehouse:  { decay: 1.2,  wet: 0.4  },
+        aztec:      { decay: 1.5,  wet: 0.45 },
+      };
+      return configs[mapName] || configs.dust;
+    },
+    _generateImpulse: function(decay, sampleRate) {
+      var length = Math.floor(sampleRate * decay);
+      var buffer = ctx.createBuffer(2, length, sampleRate);
+      for (var ch = 0; ch < 2; ch++) {
+        var data = buffer.getChannelData(ch);
+        for (var i = 0; i < length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-3 * i / length);
+        }
+      }
+      return buffer;
+    },
+    initReverb: function(mapName) {
+      var c = ensureCtx();
+      var config = this._getReverbConfig(mapName);
+      if (this._reverbNode) {
+        this._reverbNode.disconnect();
+        this._reverbWet.disconnect();
+      }
+      this._reverbNode = c.createConvolver();
+      this._reverbNode.buffer = this._generateImpulse(config.decay, c.sampleRate);
+      this._reverbWet = c.createGain();
+      this._reverbWet.gain.value = config.wet;
+      masterGain.connect(this._reverbNode);
+      this._reverbNode.connect(this._reverbWet);
+      this._reverbWet.connect(compressor);
+    },
+    // ── Distant Gunfire Echo ──────────────────────────────
+    _createDistantEcho: function(x, y, z, distance) {
+      if (distance < 30) return;
+      var c = ensureCtx();
+      var delay = Math.min(0.4, distance / 343);
+      var echoGain = Math.max(0.02, 0.15 - distance * 0.002);
+      var panner = this._createPanner(x, y, z, 700);
+      panner.connect(masterGain);
+      noiseBurst({
+        freq: 400, duration: 0.12, gain: echoGain,
+        filterType: 'lowpass',
+        delay: delay,
+        destination: panner
+      });
+    },
+    // ── Surface Impact Sounds ─────────────────────────────
+    impactConcrete: function(x, y, z) {
+      var panner = this._createPanner(x, y, z, 150);
+      panner.connect(masterGain);
+      noiseBurst({ freq: 2000, duration: 0.03, gain: 0.08, filterType: 'highpass', destination: panner });
+      noiseBurst({ freq: 500, duration: 0.02, gain: 0.05, filterType: 'bandpass', destination: panner });
+    },
+    impactMetal: function(x, y, z) {
+      var panner = this._createPanner(x, y, z, 300);
+      panner.connect(masterGain);
+      var c = ensureCtx();
+      var t = c.currentTime;
+      var o = c.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = 3200 + Math.random() * 800;
+      var g = c.createGain();
+      g.gain.setValueAtTime(0.1, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      o.connect(g); g.connect(panner);
+      o.onended = function() {
+        try { o.disconnect(); } catch(e) {}
+        try { g.disconnect(); } catch(e) {}
+      };
+      o.start(t); o.stop(t + 0.2);
+      noiseBurst({ freq: 4000, duration: 0.02, gain: 0.06, filterType: 'highpass', destination: panner });
+    },
+    impactWood: function(x, y, z) {
+      var panner = this._createPanner(x, y, z, 200);
+      panner.connect(masterGain);
+      noiseBurst({ freq: 300, duration: 0.05, gain: 0.1, filterType: 'lowpass', destination: panner });
+      noiseBurst({ freq: 2500, duration: 0.02, gain: 0.04, filterType: 'bandpass', delay: 0.01, destination: panner });
+    },
+    // Shell casing clink — short metallic tap
+    shellCasing: function(pos) {
+      if (!ctx) return;
+      var t = ctx.currentTime;
+      // Metallic tink — lower frequency triangle wave for brass resonance
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = 1800 + Math.random() * 1200;
+      gain.gain.setValueAtTime(0.025, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      osc.start(t);
+      osc.stop(t + 0.07);
+      // Impact noise — short broadband click for the initial hit
+      noiseBurst({ duration: 0.015, gain: 0.02, freq: 2000, Q: 0.5,
+        filterType: 'bandpass' });
+    },
+    // Wall impact — thud for concrete/wood, ping for metal
+    wallImpact: function(materialType) {
+      if (!ctx) return;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+
+      if (materialType === 'metal') {
+        osc.type = 'sine';
+        osc.frequency.value = 2000 + Math.random() * 1500;
+        gain.gain.setValueAtTime(0.04, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      } else {
+        osc.type = 'sine';
+        osc.frequency.value = 200 + Math.random() * 100;
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+      }
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.1);
+    },
+
+    menuClick: function() {
+      if (_uiDebounce('menuClick')) return;
+      // Trigger cock — spring tension click then hammer catch
+      noiseBurst({ duration: 0.005, gain: 0.28, freq: 2500, Q: 5, filterType: 'bandpass' });
+      noiseBurst({ duration: 0.003, gain: 0.14, freq: 800, Q: 4, filterType: 'bandpass' });
+      noiseBurst({ duration: 0.025, gain: 0.04, freq: 3000, Q: 2, filterType: 'highpass', delay: 0.008 });
+      noiseBurst({ duration: 0.006, gain: 0.32, freq: 2800, Q: 6, filterType: 'bandpass', delay: 0.045 });
+      noiseBurst({ duration: 0.003, gain: 0.16, freq: 900, Q: 4, filterType: 'bandpass', delay: 0.045 });
+    },
+
+    menuSelect: function() {
+      if (_uiDebounce('menuSelect')) return;
+      // Softer trigger cock for option switching
+      noiseBurst({ duration: 0.005, gain: 0.18, freq: 2500, Q: 5, filterType: 'bandpass' });
+      noiseBurst({ duration: 0.003, gain: 0.09, freq: 800, Q: 4, filterType: 'bandpass' });
+      noiseBurst({ duration: 0.02, gain: 0.03, freq: 3000, Q: 2, filterType: 'highpass', delay: 0.008 });
+      noiseBurst({ duration: 0.004, gain: 0.2, freq: 2800, Q: 6, filterType: 'bandpass', delay: 0.045 });
+      noiseBurst({ duration: 0.002, gain: 0.1, freq: 900, Q: 4, filterType: 'bandpass', delay: 0.045 });
+    },
+
+    menuStartClick: function() {
+      if (_uiDebounce('menuStartClick')) return;
+      // AWP boom — massive sniper shot as game start
+      Sound.awpShot();
+    },
+
+    bossBarrageWindup: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var osc = c.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(40, now);
+      osc.frequency.linearRampToValueAtTime(120, now + 1.0);
+      var gain = c.createGain();
+      gain.gain.setValueAtTime(0.0, now);
+      gain.gain.linearRampToValueAtTime(0.5, now + 0.8);
+      gain.gain.linearRampToValueAtTime(0.0, now + 1.0);
+      var dist = c.createWaveShaper();
+      dist.curve = getDistortionCurve(50);
+      osc.connect(dist);
+      dist.connect(gain);
+      gain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { dist.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      osc.start(now);
+      osc.stop(now + 1.0);
+    },
+
+    bossGrenadeLaunch: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(80, now);
+      osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
+      var gain = c.createGain();
+      gain.gain.setValueAtTime(0.4, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      var noise = c.createBufferSource();
+      noise.buffer = getNoiseBuffer(0.1);
+      var nGain = c.createGain();
+      nGain.gain.setValueAtTime(0.15, now);
+      nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      noise.connect(nGain);
+      nGain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      noise.onended = function() {
+        try { noise.disconnect(); } catch(e) {}
+        try { nGain.disconnect(); } catch(e) {}
+      };
+      osc.start(now);
+      osc.stop(now + 0.2);
+      noise.start(now);
+      noise.stop(now + 0.1);
+    },
+
+    bossPhaseTransition: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var osc1 = c.createOscillator();
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(300, now);
+      osc1.frequency.linearRampToValueAtTime(800, now + 0.15);
+      osc1.frequency.linearRampToValueAtTime(200, now + 0.4);
+      var osc2 = c.createOscillator();
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(150, now);
+      osc2.frequency.linearRampToValueAtTime(100, now + 0.4);
+      var gain = c.createGain();
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.0, now + 0.4);
+      var dist = c.createWaveShaper();
+      dist.curve = getDistortionCurve(80);
+      osc1.connect(dist);
+      osc2.connect(dist);
+      dist.connect(gain);
+      gain.connect(masterGain);
+      var cleaned = false;
+      function cleanup() {
+        if (cleaned) return;
+        cleaned = true;
+        try { osc1.disconnect(); } catch(e) {}
+        try { osc2.disconnect(); } catch(e) {}
+        try { dist.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      }
+      // Both oscillators end at the same time; clean up when either fires
+      osc1.onended = cleanup;
+      osc2.onended = cleanup;
+      osc1.start(now);
+      osc1.stop(now + 0.4);
+      osc2.start(now);
+      osc2.stop(now + 0.4);
+    },
+
+    bossSpawnAlert: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var osc = c.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.setValueAtTime(220, now + 0.4);
+      osc.frequency.setValueAtTime(165, now + 0.5);
+      osc.frequency.setValueAtTime(165, now + 0.9);
+      var gain = c.createGain();
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.setValueAtTime(0.35, now + 0.9);
+      gain.gain.linearRampToValueAtTime(0.0, now + 1.2);
+      var dist = c.createWaveShaper();
+      dist.curve = getDistortionCurve(30);
+      osc.connect(dist);
+      dist.connect(gain);
+      gain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { dist.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      osc.start(now);
+      osc.stop(now + 1.2);
+    },
+
+    bossMinionSummon: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var noise = c.createBufferSource();
+      noise.buffer = getNoiseBuffer(0.5);
+      var bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1200;
+      bp.Q.value = 5;
+      var gain = c.createGain();
+      gain.gain.setValueAtTime(0.0, now);
+      gain.gain.linearRampToValueAtTime(0.25, now + 0.05);
+      gain.gain.setValueAtTime(0.25, now + 0.35);
+      gain.gain.linearRampToValueAtTime(0.0, now + 0.5);
+      noise.connect(bp);
+      bp.connect(gain);
+      gain.connect(masterGain);
+      noise.onended = function() {
+        try { noise.disconnect(); } catch(e) {}
+        try { bp.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      noise.start(now);
+      noise.stop(now + 0.5);
+    },
+
+    bossDeath: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var noise = c.createBufferSource();
+      noise.buffer = getNoiseBuffer(1.5);
+      var lp = c.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(2000, now);
+      lp.frequency.exponentialRampToValueAtTime(100, now + 1.5);
+      var dist = c.createWaveShaper();
+      dist.curve = getDistortionCurve(60);
+      var gain = c.createGain();
+      gain.gain.setValueAtTime(0.5, now);
+      gain.gain.linearRampToValueAtTime(0.0, now + 1.5);
+      noise.connect(lp);
+      lp.connect(dist);
+      dist.connect(gain);
+      gain.connect(masterGain);
+      noise.onended = function() {
+        try { noise.disconnect(); } catch(e) {}
+        try { lp.disconnect(); } catch(e) {}
+        try { dist.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      noise.start(now);
+      noise.stop(now + 1.5);
+      var osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(50, now);
+      osc.frequency.linearRampToValueAtTime(25, now + 1.5);
+      var subGain = c.createGain();
+      subGain.gain.setValueAtTime(0.4, now);
+      subGain.gain.linearRampToValueAtTime(0.0, now + 1.5);
+      osc.connect(subGain);
+      subGain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { subGain.disconnect(); } catch(e) {}
+      };
+      osc.start(now);
+      osc.stop(now + 1.5);
+    },
+
+    bossHeartbeat: function(gain) {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var g = gain || 0.15;
+
+      // First thump (low "lub")
+      var osc1 = c.createOscillator();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(45, now);
+      osc1.frequency.exponentialRampToValueAtTime(30, now + 0.1);
+      var g1 = c.createGain();
+      g1.gain.setValueAtTime(g, now);
+      g1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc1.connect(g1);
+      g1.connect(masterGain);
+      osc1.onended = function() {
+        try { osc1.disconnect(); } catch(e) {}
+        try { g1.disconnect(); } catch(e) {}
+      };
+      osc1.start(now);
+      osc1.stop(now + 0.15);
+
+      // Second thump (higher "dub"), 0.15s after first
+      var osc2 = c.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(55, now + 0.15);
+      osc2.frequency.exponentialRampToValueAtTime(35, now + 0.25);
+      var g2 = c.createGain();
+      g2.gain.setValueAtTime(0.001, now);
+      g2.gain.setValueAtTime(g * 0.7, now + 0.15);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc2.connect(g2);
+      g2.connect(masterGain);
+      osc2.onended = function() {
+        try { osc2.disconnect(); } catch(e) {}
+        try { g2.disconnect(); } catch(e) {}
+      };
+      osc2.start(now);
+      osc2.stop(now + 0.3);
+    },
+
+    bossChargeWindup: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var osc = c.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(60, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.8);
+      var dist = c.createWaveShaper();
+      dist.curve = getDistortionCurve(40);
+      var gain = c.createGain();
+      gain.gain.setValueAtTime(0.0, now);
+      gain.gain.linearRampToValueAtTime(0.4, now + 0.6);
+      gain.gain.linearRampToValueAtTime(0.3, now + 0.8);
+      osc.connect(dist);
+      dist.connect(gain);
+      gain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { dist.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      osc.start(now);
+      osc.stop(now + 0.8);
+      var noise = c.createBufferSource();
+      noise.buffer = getNoiseBuffer(0.8);
+      var bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(300, now);
+      bp.Q.value = 2;
+      var nGain = c.createGain();
+      nGain.gain.setValueAtTime(0.0, now);
+      nGain.gain.linearRampToValueAtTime(0.15, now + 0.6);
+      nGain.gain.linearRampToValueAtTime(0.0, now + 0.8);
+      noise.connect(bp);
+      bp.connect(nGain);
+      nGain.connect(masterGain);
+      noise.onended = function() {
+        try { noise.disconnect(); } catch(e) {}
+        try { bp.disconnect(); } catch(e) {}
+        try { nGain.disconnect(); } catch(e) {}
+      };
+      noise.start(now);
+      noise.stop(now + 0.8);
+    },
+
+    bossChargeMelee: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(80, now);
+      osc.frequency.exponentialRampToValueAtTime(25, now + 0.3);
+      var gain = c.createGain();
+      gain.gain.setValueAtTime(0.6, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      osc.start(now);
+      osc.stop(now + 0.3);
+      var noise = c.createBufferSource();
+      noise.buffer = getNoiseBuffer(0.15);
+      var lp = c.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(800, now);
+      lp.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+      var nGain = c.createGain();
+      nGain.gain.setValueAtTime(0.4, now);
+      nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      noise.connect(lp);
+      lp.connect(nGain);
+      nGain.connect(masterGain);
+      noise.onended = function() {
+        try { noise.disconnect(); } catch(e) {}
+        try { lp.disconnect(); } catch(e) {}
+        try { nGain.disconnect(); } catch(e) {}
+      };
+      noise.start(now);
+      noise.stop(now + 0.15);
+    },
+
+    bossVictory: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+
+      // Sub-bass boom
+      var sub = c.createOscillator();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(40, now);
+      sub.frequency.exponentialRampToValueAtTime(20, now + 1.5);
+      var subGain = c.createGain();
+      subGain.gain.setValueAtTime(0.5, now);
+      subGain.gain.linearRampToValueAtTime(0.0, now + 1.5);
+      sub.connect(subGain);
+      subGain.connect(masterGain);
+      sub.onended = function() {
+        try { sub.disconnect(); } catch(e) {}
+        try { subGain.disconnect(); } catch(e) {}
+      };
+      sub.start(now);
+      sub.stop(now + 1.5);
+
+      // Major triad chord (brass-like sawtooth)
+      var notes = [261.6, 329.6, 392.0]; // C4, E4, G4
+      for (var i = 0; i < notes.length; i++) {
+        var osc = c.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(notes[i], now);
+        var lp = c.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(2000, now);
+        lp.frequency.exponentialRampToValueAtTime(400, now + 2.0);
+        var gain = c.createGain();
+        gain.gain.setValueAtTime(0.0, now);
+        gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+        gain.gain.setValueAtTime(0.15, now + 0.8);
+        gain.gain.linearRampToValueAtTime(0.0, now + 2.0);
+        osc.connect(lp);
+        lp.connect(gain);
+        gain.connect(masterGain);
+        (function(o, f, g) {
+          o.onended = function() {
+            try { o.disconnect(); } catch(e) {}
+            try { f.disconnect(); } catch(e) {}
+            try { g.disconnect(); } catch(e) {}
+          };
+        })(osc, lp, gain);
+        osc.start(now);
+        osc.stop(now + 2.0);
+      }
+    },
+
+    bossGunfire: function() {
+      // Lower-pitched, louder variant of enemyShot for the boss
+      noiseBurst({ duration: 0.008, gain: 0.35, freq: 1400, Q: 0.5,
+        filterType: 'highpass', distortion: 15 });
+      noiseBurst({ duration: 0.06, gain: 0.25, freq: 560, freqEnd: 140,
+        Q: 0.7 });
+      resTone({ freq: 245, freqEnd: 56, duration: 0.05, gain: 0.17,
+        type: 'sawtooth', filterFreq: 1050, filterEnd: 210 });
+      noiseBurst({ duration: 0.1, gain: 0.06, freq: 350, freqEnd: 140,
+        Q: 0.4, delay: 0.01, attack: 0.008 });
+    },
+
+    bossFootstep: function() {
+      var c = ensureCtx();
+      var now = c.currentTime;
+      var osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(50, now);
+      osc.frequency.exponentialRampToValueAtTime(25, now + 0.1);
+      var gain = c.createGain();
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      var noise = c.createBufferSource();
+      noise.buffer = getNoiseBuffer(0.08);
+      var nGain = c.createGain();
+      nGain.gain.setValueAtTime(0.1, now);
+      nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      noise.connect(nGain);
+      nGain.connect(masterGain);
+      osc.onended = function() {
+        try { osc.disconnect(); } catch(e) {}
+        try { gain.disconnect(); } catch(e) {}
+      };
+      noise.onended = function() {
+        try { noise.disconnect(); } catch(e) {}
+        try { nGain.disconnect(); } catch(e) {}
+      };
+      osc.start(now);
+      osc.stop(now + 0.15);
+      noise.start(now);
+      noise.stop(now + 0.08);
+    },
+  };
+
+  GAME.Sound = Sound;
+})();

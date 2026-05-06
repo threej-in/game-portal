@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freeze Trap</title>
+    
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body {
+            background-color: #F1F1F1;
+            color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            -webkit-font-smoothing: none;
+            font-smooth: never;
+        }
+        h1 {
+            font-size: 3rem; 
+            font-weight: normal;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            color: #0f172a;
+            text-shadow: none;
+            transition: all 0.5s ease-in-out;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="backgroundCanvas"></canvas>
+
+    <h1 id="mainTitle">Freeze Trap</h1>
+    
+    <div id="gameContainer" style="position: relative;">
+        <canvas id="gameCanvas"></canvas>
+        <canvas id="boundaryCanvas" style="display: none;"></canvas>
+        
+        <div id="mainMenu" class="menu-container">
+            <h2 class="menu-title">Ready to Play?</h2>
+            <button id="btn-start-campaign" class="menu-button">Start</button>
+            <button id="btn-custom" class="menu-button">Custom</button>
+            <button id="btn-pollock" class="menu-button">Paint Pollock</button>
+        </div>
+
+        <div id="customMenu" class="menu-container" style="display: none;">
+            <h2 class="menu-title">Custom Game</h2>
+            <div class="slider-container">
+                <label for="time-slider">Time: <span id="time-value">30</span>s</label>
+                <input type="range" id="time-slider" min="10" max="120" value="30" class="slider">
+            </div>
+            <div class="slider-container">
+                <label for="balls-slider">Balls: <span id="balls-value">2</span></label>
+                <input type="range" id="balls-slider" min="1" max="10" value="2" class="slider">
+            </div>
+            <button id="btn-start-custom" class="menu-button">Start</button>
+            <button id="btn-back" class="menu-button-secondary">Back</button>
+        </div>
+        
+        <div id="inGameControls" style="display: none;">
+            <button id="btn-restart" class="ingame-button">Restart</button>
+            <button id="btn-home" class="ingame-button">Home</button>
+        </div>
+
+        <div id="gameOverMenu" class="menu-container" style="display: none;">
+            <h2 id="gameOverSubtitle" class="menu-title"></h2>
+            <h1 id="gameOverMessage" class="game-over-message"></h1>
+            <button id="btn-next-level" class="menu-button">Next Level</button>
+            <button id="btn-try-again" class="menu-button">Try Again</button>
+            <button id="btn-home-gameover" class="menu-button-secondary">Return to Menu</button>
+        </div>
+
+    </div>
+    
+    <script src="main.js" type="module"></script>
+</body>
+</html>

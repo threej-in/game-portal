@@ -47,5 +47,9 @@ export default async function PlayPage({ params }: PlayPageProps) {
   }
 
   await incrementPlayCount(slug);
-  redirect(game.embedUrl);
+
+  const redirectUrl = new URL(game.embedUrl, "https://threej.local");
+  redirectUrl.searchParams.set("threej_internal", "1");
+
+  redirect(`${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`);
 }

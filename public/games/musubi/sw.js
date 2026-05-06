@@ -1,0 +1,55 @@
+const CACHE_NAME = 'musubi-2026-05-06T07-24-04';
+const urlsToCache = [
+    '/games/musubi/',
+    '/games/musubi/index.html',
+    '/games/musubi/Music/Music1.mp3',
+    '/games/musubi/Music/Music2.mp3',
+    '/games/musubi/Music/Music3.mp3',
+    '/games/musubi/Music/Music4.mp3',
+    '/games/musubi/Music/Music5.mp3',
+    '/games/musubi/Music/beepMenuChoice.mp3'
+];
+
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then((cache) => cache.addAll(urlsToCache))
+    );
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
+});
+
+self.addEventListener('fetch', (event) => {
+    // Network first pour les assets JS/CSS, cache first pour le reste
+    if (event.request.url.includes('/assets/')) {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseClone);
+                    });
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+    } else {
+        event.respondWith(
+            caches.match(event.request)
+                .then((response) => response || fetch(event.request))
+        );
+    }
+});

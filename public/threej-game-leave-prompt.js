@@ -4,6 +4,14 @@
   window.__threejLeavePromptInstalled = true;
 
   function cameFromThisSite() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("threej_internal") === "1") {
+      params.delete("threej_internal");
+      var cleanUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash;
+      history.replaceState(history.state, "", cleanUrl);
+      return true;
+    }
+
     if (!document.referrer) return false;
 
     try {
