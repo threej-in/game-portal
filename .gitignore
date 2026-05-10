@@ -20,6 +20,8 @@
 # production
 /build
 /data/play-stats.json
+/data/videos.json
+/data/pending-videos.json
 
 # misc
 .DS_Store
