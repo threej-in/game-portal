@@ -4,6 +4,17 @@ import { acceptPendingVideo, isValidPendingVideoSignature, signAcceptedVideo } f
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function getPublicBaseUrl(request: NextRequest) {
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+  if (forwardedHost) return `${forwardedProto}://${forwardedHost}`;
+
+  return new URL(request.url).origin;
+}
+
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id") || "";
   const signature = request.nextUrl.searchParams.get("sig") || "";
@@ -28,8 +39,8 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const videoUrl = new URL(`/videos/${acceptedVideo.slug}`, request.url);
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+  const origin = getPublicBaseUrl(request);
+  const videoUrl = new URL(`/videos/${acceptedVideo.slug}`, origin);
   const removeSignature = signAcceptedVideo(acceptedVideo.slug);
   const removeUrl = `${origin}/api/videos/remove?slug=${encodeURIComponent(acceptedVideo.slug)}&sig=${encodeURIComponent(removeSignature)}`;
 

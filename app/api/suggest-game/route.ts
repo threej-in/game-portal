@@ -6,8 +6,19 @@ function clean(value: FormDataEntryValue | null): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function getPublicBaseUrl(request: NextRequest) {
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+  if (forwardedHost) return `${forwardedProto}://${forwardedHost}`;
+
+  return new URL(request.url).origin;
+}
+
 function redirectWithStatus(request: NextRequest, status: string) {
-  const url = new URL("/suggest-game", request.url);
+  const url = new URL("/suggest-game", getPublicBaseUrl(request));
   url.searchParams.set("status", status);
   return NextResponse.redirect(url, { status: 303 });
 }
