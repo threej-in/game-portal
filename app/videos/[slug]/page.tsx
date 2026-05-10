@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { SiteFooter } from "@/components/site-footer";
 import { VideoEmbed } from "@/components/video-embed";
+import { getAllGames } from "@/lib/games";
 import { getVideoEmbedSrc, getVideoKeywords } from "@/lib/videos";
 import { getStoredVideoBySlug, readAllVideos } from "@/lib/video-store";
 
@@ -67,7 +69,10 @@ export default async function VideoPage({ params }: VideoPageProps) {
     notFound();
   }
 
-  const otherVideos = (await readAllVideos()).filter((item) => item.slug !== video.slug).slice(0, 8);
+  const videos = await readAllVideos();
+  const otherVideos = videos.filter((item) => item.slug !== video.slug).slice(0, 8);
+  const gameCount = getAllGames().length;
+  const isSocialEmbed = isSocialVideoEmbed(video.embedHtml);
   const embedUrl = getVideoEmbedSrc(video.embedHtml);
   const videoJsonLd = {
     "@context": "https://schema.org",
@@ -102,7 +107,7 @@ export default async function VideoPage({ params }: VideoPageProps) {
   };
 
   return (
-    <main className="mx-auto max-w-7xl">
+    <main className="mx-auto max-w-6xl">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(videoJsonLd) }}
@@ -111,35 +116,42 @@ export default async function VideoPage({ params }: VideoPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <Link
+              href="/videos"
+              className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-xs font-bold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
+            >
+              Back to videos
+            </Link>
+            <a
+              href={video.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="line-clamp-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200"
+            >
+              Source: {video.sourceName}
+            </a>
+          </div>
           <VideoEmbed
             html={video.embedHtml}
             title={video.title}
-            className="grid min-h-[calc(100svh-1rem)] place-items-center overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-2xl shadow-black/40 sm:aspect-video sm:min-h-0 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:max-w-full [&_.twitter-tweet]:mx-auto"
+            className={
+              isSocialEmbed
+                ? "grid min-h-[360px] place-items-center overflow-hidden rounded-xl border border-slate-800 bg-black/95 p-3 shadow-xl shadow-black/30 sm:min-h-[420px] [&_iframe]:max-w-full [&_.instagram-media]:mx-auto [&_.tiktok-embed]:mx-auto [&_.twitter-tweet]:mx-auto [&_.twitter-tweet]:my-0"
+                : "aspect-video overflow-hidden rounded-xl border border-slate-800 bg-black shadow-xl shadow-black/30 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:max-w-full"
+            }
           />
-          <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">{video.title}</h1>
-                <p className="mt-2 text-sm text-slate-500">
-                  Full source:{" "}
-                  <a href={video.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:text-cyan-200">
-                    {video.sourceName}
-                  </a>
-                </p>
-              </div>
-              <Link href="/videos" className="btn btn-secondary">
-                Back to Videos
-              </Link>
-            </div>
-            <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-300">{video.description}</p>
-            <p className="mt-3 rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-xs leading-5 text-slate-500">
+          <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">{video.title}</h1>
+            <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-300">{video.description}</p>
+            <p className="mt-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs leading-5 text-slate-500">
               This page is for the full original video source behind a viral clip. Verify the source link before publishing sensitive or news-related videos.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {video.tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400">
+                <span key={tag} className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-400">
                   {tag}
                 </span>
               ))}
@@ -147,29 +159,35 @@ export default async function VideoPage({ params }: VideoPageProps) {
           </div>
         </section>
 
-        <aside className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 lg:sticky lg:top-4 lg:self-start">
+        <aside className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 lg:sticky lg:top-4 lg:self-start">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-slate-400">More Videos</h2>
-            <Link href="/submit-video" className="text-sm font-semibold text-cyan-300 hover:text-cyan-200">
+            <h2 className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">More Videos</h2>
+            <Link href="/submit-video" className="text-xs font-semibold text-cyan-300 hover:text-cyan-200">
               Submit
             </Link>
           </div>
-          <div className="mt-4 grid gap-3">
+          <div className="mt-3 grid gap-2">
             {otherVideos.length ? (
               otherVideos.map((item) => (
-                <Link key={item.slug} href={`/videos/${item.slug}`} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 transition hover:border-slate-700 hover:bg-slate-900">
+                <Link key={item.slug} href={`/videos/${item.slug}`} className="rounded-lg border border-slate-800 bg-slate-900/60 p-2.5 transition hover:border-slate-700 hover:bg-slate-900">
                   <div className="line-clamp-2 text-sm font-bold text-white">{item.title}</div>
                   <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{item.description}</div>
                 </Link>
               ))
             ) : (
-              <p className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-500">
+              <p className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-500">
                 More videos will appear here after you add them to the catalog.
               </p>
             )}
           </div>
         </aside>
       </div>
+      <SiteFooter gameCount={gameCount} videoCount={videos.length} />
     </main>
   );
+}
+
+function isSocialVideoEmbed(embedHtml: string) {
+  const html = embedHtml.toLowerCase();
+  return html.includes("twitter-tweet") || html.includes("instagram-media") || html.includes("tiktok-embed");
 }

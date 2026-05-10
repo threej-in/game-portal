@@ -5,6 +5,7 @@ import { HomeFab } from "@/components/home-fab";
 import { SiteFooter } from "@/components/site-footer";
 import { getAllGames, getNewestGames } from "@/lib/games";
 import { getMostPlayedGameSlug, readPlayStats, sortGamesByPopularity } from "@/lib/play-stats";
+import { readAllVideos } from "@/lib/video-store";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [stats, mostPlayedSlug] = await Promise.all([readPlayStats(), getMostPlayedGameSlug()]);
+  const [stats, mostPlayedSlug, videos] = await Promise.all([readPlayStats(), getMostPlayedGameSlug(), readAllVideos()]);
   const newestGames = getNewestGames(5);
   const newestSlugs = new Set(newestGames.map((game) => game.slug));
   const remainingGames = sortGamesByPopularity(
@@ -95,7 +96,7 @@ export default async function Home() {
           ))}
         </div>
       </section>
-      <SiteFooter gameCount={games.length} />
+      <SiteFooter gameCount={games.length} videoCount={videos.length} />
       <HomeFab />
     </main>
   );

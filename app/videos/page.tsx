@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/site-footer";
 import { VideoFab } from "@/components/video-fab";
-import { getVideoEmbedSrc } from "@/lib/videos";
+import { getAllGames } from "@/lib/games";
 import { readAllVideos } from "@/lib/video-store";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +39,7 @@ export const metadata: Metadata = {
 
 export default async function VideosPage() {
   const videos = await readAllVideos();
+  const gameCount = getAllGames().length;
   const itemListJsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -63,7 +64,7 @@ export default async function VideosPage() {
 
       <section className="grid snap-y snap-mandatory gap-4 sm:snap-none sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {videos.map((video) => {
-          const embedSrc = getVideoEmbedSrc(video.embedHtml);
+          const embedType = getEmbedType(video.embedHtml);
 
           return (
             <article
@@ -71,20 +72,27 @@ export default async function VideosPage() {
               className="group flex min-h-[calc(100svh-1rem)] snap-start flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 shadow-xl shadow-black/25 transition hover:border-slate-700 sm:min-h-0 sm:hover:-translate-y-1"
             >
               <div className="relative flex min-h-0 flex-1 items-center justify-center bg-black sm:aspect-video sm:flex-none">
-                {embedSrc ? (
-                  <iframe
-                    src={embedSrc}
-                    title={video.title}
-                    className="h-full w-full"
+                {video.thumbnailUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={video.thumbnailUrl}
+                    alt={video.title}
+                    className="h-full w-full object-cover"
                     loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                    No preview
+                  <div className="flex h-full w-full flex-col items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(248,113,113,.28),transparent_34%),linear-gradient(135deg,#020617,#111827)] px-6 text-center">
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white shadow-2xl shadow-red-950/60">
+                      <svg viewBox="0 0 24 24" className="h-8 w-8 fill-current" aria-hidden="true">
+                        <path d="m9 8 7 4-7 4V8Z" />
+                      </svg>
+                    </div>
+                    <div className="mt-4 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-red-100">
+                      {embedType}
+                    </div>
                   </div>
                 )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
               </div>
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -111,8 +119,19 @@ export default async function VideosPage() {
           );
         })}
       </section>
-      <SiteFooter videoCount={videos.length} />
+      <SiteFooter gameCount={gameCount} videoCount={videos.length} />
       <VideoFab />
     </main>
   );
+}
+
+function getEmbedType(embedHtml: string) {
+  const html = embedHtml.toLowerCase();
+  if (html.includes("twitter-tweet")) return "X / Twitter";
+  if (html.includes("instagram-media")) return "Instagram";
+  if (html.includes("tiktok-embed")) return "TikTok";
+  if (html.includes("youtube.com") || html.includes("youtu.be")) return "YouTube";
+  if (html.includes("vimeo.com")) return "Vimeo";
+  if (html.includes("reddit")) return "Reddit";
+  return "Video";
 }
