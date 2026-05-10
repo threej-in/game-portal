@@ -37,15 +37,31 @@ function tryServeCompressedAsset(req, res) {
     return false;
   }
 
-  const url = new URL(req.url, `http://${hostname}:${port}`);
-  const pathname = decodeURIComponent(url.pathname);
+  if (req.url.startsWith("//")) {
+    return false;
+  }
+
+  let pathname;
+  try {
+    const url = new URL(req.url, `http://localhost:${port}`);
+    pathname = decodeURIComponent(url.pathname);
+  } catch {
+    return false;
+  }
 
   if (!pathname.startsWith("/games/")) {
     return false;
   }
 
   const absolutePath = path.normalize(path.join(publicRoot, pathname.replace(/^\//, "")));
-  if (!absolutePath.startsWith(publicRoot) || !fs.existsSync(absolutePath) || fs.statSync(absolutePath).isDirectory()) {
+  const relativePath = path.relative(publicRoot, absolutePath);
+
+  if (
+    relativePath.startsWith("..") ||
+    path.isAbsolute(relativePath) ||
+    !fs.existsSync(absolutePath) ||
+    fs.statSync(absolutePath).isDirectory()
+  ) {
     return false;
   }
 
