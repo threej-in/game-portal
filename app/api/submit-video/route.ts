@@ -24,6 +24,20 @@ function redirectWithStatus(request: NextRequest, status: string) {
   return NextResponse.redirect(url, { status: 303 });
 }
 
+function isSupportedEmbedHtml(embedHtml: string) {
+  const html = embedHtml.toLowerCase();
+
+  return (
+    html.includes("<iframe") ||
+    html.includes("twitter-tweet") ||
+    html.includes("instagram-media") ||
+    html.includes("tiktok-embed") ||
+    html.includes("reddit-embed-bq") ||
+    html.includes("youtube.com/embed") ||
+    html.includes("player.vimeo.com")
+  );
+}
+
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
 
@@ -39,7 +53,7 @@ export async function POST(request: NextRequest) {
   const sourceName = clean(formData.get("sourceName"));
   const thumbnailUrl = clean(formData.get("thumbnailUrl"));
 
-  if (!title || !description || !embedHtml || !embedHtml.toLowerCase().includes("<iframe")) {
+  if (!title || !description || !embedHtml || !isSupportedEmbedHtml(embedHtml)) {
     return redirectWithStatus(request, "invalid");
   }
 
@@ -81,7 +95,7 @@ export async function POST(request: NextRequest) {
     "Description:",
     description,
     "",
-    "Embed iframe:",
+    "Embed code:",
     embedHtml,
   ].join("\n");
 

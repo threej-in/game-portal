@@ -34,7 +34,7 @@ function StatusMessage({ status }: { status?: string }) {
   if (status === "invalid") {
     return (
       <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-        Title, description, and iframe embed code are required.
+        Title, description, and supported embed code are required.
       </p>
     );
   }
@@ -69,7 +69,7 @@ export default async function SubmitVideoPage({ searchParams }: SubmitVideoPageP
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-300">Submit Video</p>
             <h1 className="mt-2 text-3xl font-bold text-slate-100">Add a viral video source</h1>
             <p className="mt-3 max-w-2xl text-sm text-slate-400 sm:text-base">
-              Paste the iframe embed code from the video host, plus the title and description. Use this for full videos behind viral reels, shorts, and social clips.
+              Paste iframe or social embed code from the video host, plus the title and description. YouTube, Vimeo, X/Twitter, Instagram, TikTok, and Reddit embeds are supported.
             </p>
           </div>
           <Link href="/videos" className="btn btn-secondary">
@@ -105,13 +105,13 @@ export default async function SubmitVideoPage({ searchParams }: SubmitVideoPageP
           </label>
 
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-slate-200">Iframe embed code</span>
+            <span className="text-sm font-medium text-slate-200">Embed code</span>
             <textarea
               name="embedHtml"
               rows={6}
               required
               className="font-mono rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-xs text-slate-100 outline-none focus:border-cyan-400"
-              placeholder={'<iframe src="https://..." width="..." height="..." allowfullscreen></iframe>'}
+              placeholder={'<iframe src="https://..."></iframe> or <blockquote class="twitter-tweet">...</blockquote>'}
             />
           </label>
 
@@ -161,7 +161,7 @@ export default async function SubmitVideoPage({ searchParams }: SubmitVideoPageP
             <button type="submit" className="btn btn-primary">
               Send Video
             </button>
-            <p className="text-xs text-slate-500">Required: title, description, and iframe embed code.</p>
+            <p className="text-xs text-slate-500">Required: title, description, and supported embed code.</p>
           </div>
         </form>
       </section>

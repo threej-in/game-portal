@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { VideoEmbed } from "@/components/video-embed";
 import { getVideoEmbedSrc, getVideoKeywords } from "@/lib/videos";
 import { getStoredVideoBySlug, readAllVideos } from "@/lib/video-store";
 
@@ -112,9 +113,10 @@ export default async function VideoPage({ params }: VideoPageProps) {
       />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section>
-          <div
-            className="min-h-[calc(100svh-1rem)] overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-2xl shadow-black/40 sm:aspect-video sm:min-h-0 [&_iframe]:h-full [&_iframe]:w-full"
-            dangerouslySetInnerHTML={{ __html: video.embedHtml }}
+          <VideoEmbed
+            html={video.embedHtml}
+            title={video.title}
+            className="grid min-h-[calc(100svh-1rem)] place-items-center overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-2xl shadow-black/40 sm:aspect-video sm:min-h-0 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:max-w-full [&_.twitter-tweet]:mx-auto"
           />
           <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
