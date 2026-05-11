@@ -135,6 +135,7 @@ export default async function VideoPage({ params }: VideoPageProps) {
             </a>
           </div>
           <VideoEmbed
+            key={video.slug}
             html={video.embedHtml}
             title={video.title}
             className={
@@ -169,7 +170,7 @@ export default async function VideoPage({ params }: VideoPageProps) {
           <div className="mt-3 grid gap-2">
             {otherVideos.length ? (
               otherVideos.map((item) => (
-                <Link key={item.slug} href={`/videos/${item.slug}`} className="grid grid-cols-[84px_1fr] gap-3 rounded-lg border border-slate-800 bg-slate-900/60 p-2 transition hover:border-slate-700 hover:bg-slate-900">
+                <Link key={item.slug} href={`/videos/${item.slug}`} className="block rounded-lg border border-slate-800 bg-slate-900/60 p-2.5 transition hover:border-slate-700 hover:bg-slate-900">
                   <div className="aspect-video overflow-hidden rounded-md bg-black">
                     {item.thumbnailUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -187,7 +188,7 @@ export default async function VideoPage({ params }: VideoPageProps) {
                       </div>
                     )}
                   </div>
-                  <div className="line-clamp-3 self-center text-sm font-bold leading-5 text-white">{item.title}</div>
+                  <div className="mt-2 line-clamp-2 text-sm font-bold leading-5 text-white">{item.title}</div>
                 </Link>
               ))
             ) : (
