@@ -25,7 +25,7 @@ export function VideoEmbed({ html, title, className }: VideoEmbedProps) {
   useEffect(() => {
     const lowerHtml = html.toLowerCase();
     const root = rootRef.current;
-    let fallbackTimer: ReturnType<typeof window.setTimeout> | undefined;
+    let fallbackTimer: number | undefined;
     const cleanupLoadListeners: Array<() => void> = [];
 
     if (lowerHtml.includes("twitter-tweet")) {
