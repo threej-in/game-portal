@@ -67,8 +67,9 @@ export default async function VideosPage() {
           const embedType = getEmbedType(video.embedHtml);
 
           return (
-            <article
+            <Link
               key={video.slug}
+              href={`/videos/${video.slug}`}
               className="group flex min-h-[calc(100svh-1rem)] snap-start flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 shadow-xl shadow-black/25 transition hover:border-slate-700 sm:min-h-0 sm:hover:-translate-y-1"
             >
               <div className="relative flex min-h-0 flex-1 items-center justify-center bg-black sm:aspect-video sm:flex-none">
@@ -95,18 +96,8 @@ export default async function VideosPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
               </div>
               <div className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="line-clamp-2 text-lg font-black text-white sm:text-base">{video.title}</h2>
-                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-400 sm:line-clamp-2">{video.description}</p>
-                  </div>
-                  <Link
-                    href={`/videos/${video.slug}`}
-                    className="shrink-0 rounded-full border border-red-400/30 bg-red-500 px-3 py-2 text-xs font-black text-white shadow-lg shadow-black/30 transition hover:bg-red-400"
-                  >
-                    Watch
-                  </Link>
-                </div>
+                <h2 className="line-clamp-2 text-lg font-black text-white sm:text-base">{video.title}</h2>
+                <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-400 sm:line-clamp-2">{video.description}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {video.tags.slice(0, 4).map((tag) => (
                     <span key={tag} className="rounded-full border border-slate-700 px-2 py-1 text-xs text-slate-400">
@@ -115,7 +106,7 @@ export default async function VideosPage() {
                   ))}
                 </div>
               </div>
-            </article>
+            </Link>
           );
         })}
       </section>

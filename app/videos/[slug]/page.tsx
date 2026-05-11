@@ -169,9 +169,25 @@ export default async function VideoPage({ params }: VideoPageProps) {
           <div className="mt-3 grid gap-2">
             {otherVideos.length ? (
               otherVideos.map((item) => (
-                <Link key={item.slug} href={`/videos/${item.slug}`} className="rounded-lg border border-slate-800 bg-slate-900/60 p-2.5 transition hover:border-slate-700 hover:bg-slate-900">
-                  <div className="line-clamp-2 text-sm font-bold text-white">{item.title}</div>
-                  <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{item.description}</div>
+                <Link key={item.slug} href={`/videos/${item.slug}`} className="grid grid-cols-[84px_1fr] gap-3 rounded-lg border border-slate-800 bg-slate-900/60 p-2 transition hover:border-slate-700 hover:bg-slate-900">
+                  <div className="aspect-video overflow-hidden rounded-md bg-black">
+                    {item.thumbnailUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.thumbnailUrl}
+                        alt={item.title}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-slate-950">
+                        <svg viewBox="0 0 24 24" className="h-6 w-6 fill-red-400" aria-hidden="true">
+                          <path d="m9 8 7 4-7 4V8Z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="line-clamp-3 self-center text-sm font-bold leading-5 text-white">{item.title}</div>
                 </Link>
               ))
             ) : (
