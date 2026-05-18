@@ -29,7 +29,8 @@ body {
     radial-gradient(circle at 90% 0, #083344 0, transparent 25%), var(--bg);
   color: var(--ink);
   min-height: 100vh;
-  padding: 10px;
+  margin: 0;
+  padding: 0;
   overflow-x: hidden;
 }
 
@@ -86,8 +87,3 @@ a {
   background: #334155;
 }
 
-@media (max-width: 640px) {
-  body {
-    padding: 8px;
-  }
-}
