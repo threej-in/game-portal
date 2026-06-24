@@ -309,8 +309,8 @@ const coreGames: Game[] = [
   },
   {
     slug: "tfm-browser",
-    title: "TFM Browser",
-    coverImage: "/covers/tfm-browser.jpg",
+    title: "Transformice",
+    coverImage: "/covers/transformice.gif",
     shortDescription: "Transformice running in the browser through Ruffle and a WebSocket TCP proxy.",
     description:
       "TFM Browser brings Transformice back to the browser by loading the Flash client through Ruffle and routing its TCP socket traffic through the portal's BrowserQuest backend on a separate raw WebSocket path. This entry hosts the browser page, resource proxy, and TCP bridge while the actual game world remains on Transformice's official servers.",
