@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
   const transformicePath =
     request.headers.get("transformice-url") ||
     request.headers.get("Transformice-Url") ||
+    getRawPathParam(request.url) ||
     requestUrl.searchParams.get("path") ||
     "/TransformiceChargeur.swf";
 
@@ -56,6 +57,23 @@ export async function GET(request: NextRequest) {
     statusText: upstream.statusText,
     headers,
   });
+}
+
+function getRawPathParam(rawUrl: string) {
+  const marker = "?path=";
+  const markerIndex = rawUrl.indexOf(marker);
+
+  if (markerIndex === -1) {
+    return null;
+  }
+
+  const rawPath = rawUrl.slice(markerIndex + marker.length);
+
+  try {
+    return decodeURIComponent(rawPath);
+  } catch {
+    return rawPath;
+  }
 }
 
 function buildTransformiceUrl(resourcePath: string) {

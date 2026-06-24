@@ -20,6 +20,23 @@
         background: #050816;
       }
 
+      #ruffle {
+        display: grid;
+        place-items: center;
+      }
+
+      .tfm-loading {
+        border: 1px solid rgba(103, 232, 249, 0.25);
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        padding: 10px 16px;
+        color: #cffafe;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
       .tfm-error {
         display: grid;
         min-height: 100%;
@@ -51,15 +68,35 @@
     </style>
   </head>
   <body>
-    <div id="ruffle"></div>
+    <div id="ruffle"><div class="tfm-loading">Loading Transformice</div></div>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <script>
       const resourceProxy = "/api/tfm-resource-proxy";
       const query = new URLSearchParams(window.location.search);
-      const websocketOverride = query.get("tfmWs") || window.localStorage.getItem("threej-tfm-ws");
+
+      if (query.get("clearTfmWs") === "1") {
+        window.localStorage.removeItem("threej-tfm-ws");
+      }
 
       if (query.get("tfmWs")) {
         window.localStorage.setItem("threej-tfm-ws", query.get("tfmWs"));
+      }
+
+      const websocketOverride = getWebsocketOverride();
+
+      function getWebsocketOverride() {
+        const value = query.get("tfmWs") || window.localStorage.getItem("threej-tfm-ws");
+
+        if (!value) {
+          return null;
+        }
+
+        if (/^wss?:\/\//i.test(value)) {
+          return value;
+        }
+
+        window.localStorage.removeItem("threej-tfm-ws");
+        return null;
       }
 
       function getWebsocketBase() {
@@ -73,6 +110,10 @@
 
         const scheme = window.location.protocol === "https:" ? "wss://" : "ws://";
         return scheme + window.location.host + "/tfm-ws";
+      }
+
+      function proxiedResourceUrl(path) {
+        return resourceProxy + "?path=" + encodeURIComponent(path);
       }
 
       function withToken(base, token) {
@@ -89,10 +130,8 @@
           const parsedUrl = new URL(inputUrl);
           const path = parsedUrl.pathname + parsedUrl.search;
           return {
-            url: resourceProxy,
-            headers: {
-              "Transformice-Url": path,
-            },
+            url: proxiedResourceUrl(path),
+            headers: {},
           };
         }
 
@@ -168,6 +207,15 @@
           "</p></div></main>";
       }
 
+      window.addEventListener("error", function (event) {
+        showError(event.message || "Unexpected script error while loading Transformice.");
+      });
+
+      window.addEventListener("unhandledrejection", function (event) {
+        const reason = event.reason;
+        showError(reason && reason.message ? reason.message : "Unexpected loading error while starting Transformice.");
+      });
+
       window.RufflePlayer = window.RufflePlayer || {};
       window.RufflePlayer.config = {
         autoplay: "on",
@@ -186,8 +234,12 @@
         const player = ruffle.createPlayer();
         player.style.width = "100vw";
         player.style.height = "100vh";
-        document.getElementById("ruffle").appendChild(player);
-        player.load({ url: resourceProxy + "?path=/TransformiceChargeur.swf" });
+        const mount = document.getElementById("ruffle");
+        mount.innerHTML = "";
+        mount.appendChild(player);
+        player.load({ url: proxiedResourceUrl("/TransformiceChargeur.swf") }).catch(function (error) {
+          showError(error && error.message ? error.message : "Unable to load Transformice.");
+        });
       });
     </script>
   </body>
