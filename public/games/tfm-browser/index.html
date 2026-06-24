@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Transformice Browser</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body,
+      #ruffle {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #050816;
+      }
+
+      .tfm-error {
+        display: grid;
+        min-height: 100%;
+        place-items: center;
+        padding: 24px;
+        color: #e5eefc;
+        font-family: Arial, sans-serif;
+        text-align: center;
+      }
+
+      .tfm-error div {
+        max-width: 560px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.86);
+        padding: 24px;
+      }
+
+      .tfm-error h1 {
+        margin-bottom: 10px;
+        font-size: 22px;
+      }
+
+      .tfm-error p {
+        color: #9fb0ca;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ruffle"></div>
+    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+    <script>
+      const resourceProxy = "/api/tfm-resource-proxy";
+      const query = new URLSearchParams(window.location.search);
+      const websocketOverride = query.get("tfmWs") || window.localStorage.getItem("threej-tfm-ws");
+
+      if (query.get("tfmWs")) {
+        window.localStorage.setItem("threej-tfm-ws", query.get("tfmWs"));
+      }
+
+      function getWebsocketBase() {
+        if (websocketOverride) {
+          return websocketOverride;
+        }
+
+        if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+          return "ws://localhost:8000/tfm-ws";
+        }
+
+        const scheme = window.location.protocol === "https:" ? "wss://" : "ws://";
+        return scheme + window.location.host + "/tfm-ws";
+      }
+
+      function withToken(base, token) {
+        const normalized = base.endsWith("/") ? base : base + "/";
+        return normalized + "?token=" + token;
+      }
+
+      (function patchFetch(originalFetch) {
+        function rewriteTransformiceUrl(inputUrl) {
+          if (!inputUrl || !String(inputUrl).includes("transformice.com")) {
+            return null;
+          }
+
+          const parsedUrl = new URL(inputUrl);
+          const path = parsedUrl.pathname + parsedUrl.search;
+          return {
+            url: resourceProxy,
+            headers: {
+              "Transformice-Url": path,
+            },
+          };
+        }
+
+        window.fetch = function () {
+          let args = Array.from(arguments);
+          const firstArg = args[0];
+          let rewrite = null;
+
+          if (typeof firstArg === "string") {
+            rewrite = rewriteTransformiceUrl(firstArg);
+            if (rewrite) {
+              args[0] = rewrite.url;
+              args[1] = {
+                ...(args[1] || {}),
+                headers: {
+                  ...(args[1] && args[1].headers ? args[1].headers : {}),
+                  ...rewrite.headers,
+                },
+              };
+            }
+          } else if (firstArg && typeof firstArg.url === "string") {
+            rewrite = rewriteTransformiceUrl(firstArg.url);
+            if (rewrite) {
+              args[0] = rewrite.url;
+              args[1] = {
+                method: firstArg.method,
+                headers: {
+                  ...Object.fromEntries(firstArg.headers.entries()),
+                  ...rewrite.headers,
+                },
+              };
+            }
+          }
+
+          return originalFetch.apply(window, args);
+        };
+      })(window.fetch);
+
+      function generateSocketProxyConfig() {
+        const websocketBase = getWebsocketBase();
+        const ipRoutes = [
+          ["51.38.60.113", "a"],
+          ["51.77.132.45", "b"],
+          ["37.187.79.102", "c"],
+          ["213.32.6.141", "d"],
+          ["57.128.182.226", "e"],
+          ["54.36.208.147", "f"],
+          ["54.36.103.104", "g"],
+          ["54.36.103.206", "h"],
+        ];
+        const ports = [
+          [11801, "1"],
+          [12801, "2"],
+          [13801, "3"],
+          [14801, "4"],
+        ];
+
+        return ipRoutes.flatMap(function (ipRoute) {
+          return ports.map(function (port) {
+            return {
+              host: ipRoute[0],
+              port: port[0],
+              proxyUrl: withToken(websocketBase, ipRoute[1] + "-" + port[1]),
+            };
+          });
+        });
+      }
+
+      function showError(message) {
+        document.body.innerHTML =
+          '<main class="tfm-error"><div><h1>Transformice could not start</h1><p>' +
+          message +
+          "</p></div></main>";
+      }
+
+      window.RufflePlayer = window.RufflePlayer || {};
+      window.RufflePlayer.config = {
+        autoplay: "on",
+        socketProxy: generateSocketProxyConfig(),
+        letterbox: "off",
+        unmuteOverlay: "hidden",
+      };
+
+      window.addEventListener("load", function () {
+        if (!window.RufflePlayer || !window.RufflePlayer.newest) {
+          showError("Ruffle did not load. Check the browser console or ad-blocking settings.");
+          return;
+        }
+
+        const ruffle = window.RufflePlayer.newest();
+        const player = ruffle.createPlayer();
+        player.style.width = "100vw";
+        player.style.height = "100vh";
+        document.getElementById("ruffle").appendChild(player);
+        player.load({ url: resourceProxy + "?path=/TransformiceChargeur.swf" });
+      });
+    </script>
+  </body>
+</html>

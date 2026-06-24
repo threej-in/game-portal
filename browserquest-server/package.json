@@ -18,7 +18,8 @@
     "semver": ">=0",
     "serve-static": "^1.7.1",
     "socket.io": "1.7.4",
-    "underscore": "~1.7.0"
+    "underscore": "~1.7.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "mocha": ">=1",

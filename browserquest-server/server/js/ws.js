@@ -4,6 +4,7 @@ var useBison = false;
 var cls = require('./lib/class');
 var http = require('http');
 var socketio = require('socket.io');
+var TfmProxy = require('./tfmproxy');
 var url = require('url');
 var Utils = require('./utils');
 var WS = {};
@@ -219,6 +220,7 @@ WS.WebsocketServer = Server.extend({
         } else {
             throw new Error('Unsupported socket.io export. Install socket.io@1.7.4 for BrowserQuest.');
         }
+        TfmProxy.attach(this._httpServer);
         this._ioServer.on('connection', function webSocketListener(socket) {
             log.info('Client socket connected from ' + socket.conn.remoteAddress);
             // Add remoteAddress property

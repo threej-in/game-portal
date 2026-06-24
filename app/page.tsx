@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { HomeFab } from "@/components/home-fab";
 import { SiteFooter } from "@/components/site-footer";
-import { getAllGames, getNewestGames } from "@/lib/games";
+import { getAllGames } from "@/lib/games";
 import { getMostPlayedGameSlug, readPlayStats, sortGamesByPopularity } from "@/lib/play-stats";
 import { readAllVideos } from "@/lib/video-store";
 
@@ -20,13 +20,7 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const [stats, mostPlayedSlug, videos] = await Promise.all([readPlayStats(), getMostPlayedGameSlug(), readAllVideos()]);
-  const newestGames = getNewestGames(5);
-  const newestSlugs = new Set(newestGames.map((game) => game.slug));
-  const remainingGames = sortGamesByPopularity(
-    getAllGames().filter((game) => !newestSlugs.has(game.slug)),
-    stats,
-  );
-  const games = [...newestGames, ...remainingGames];
+  const games = sortGamesByPopularity(getAllGames(), stats);
 
   return (
     <main>

@@ -1,4 +1,4 @@
-﻿import { talha37Games } from "./talha37-games";
+import { talha37Games } from "./talha37-games";
 
 export type Game = {
   slug: string;
@@ -308,6 +308,22 @@ const coreGames: Game[] = [
     embedUrl: "/games/browserquest/index.html",
   },
   {
+    slug: "tfm-browser",
+    title: "TFM Browser",
+    coverImage: "/covers/tfm-browser.jpg",
+    shortDescription: "Transformice running in the browser through Ruffle and a WebSocket TCP proxy.",
+    description:
+      "TFM Browser brings Transformice back to the browser by loading the Flash client through Ruffle and routing its TCP socket traffic through the portal's BrowserQuest backend on a separate raw WebSocket path. This entry hosts the browser page, resource proxy, and TCP bridge while the actual game world remains on Transformice's official servers.",
+    categories: ["Multiplayer", "Adventure"],
+    tags: ["Transformice", "Ruffle", "WebSocket"],
+    featured: false,
+    mobile: false,
+    license: "GPL-3.0-or-later",
+    sourceUrl: "https://github.com/extremq/tfm-browser",
+    attribution: "extremq and tfm-browser contributors; Transformice belongs to its original creators",
+    embedUrl: "/games/tfm-browser/index.html",
+  },
+  {
     slug: "twitchdodge",
     title: "DODGE",
     coverImage: "/covers/twitchdodge.png",
@@ -537,4 +553,5 @@ export function searchGames(query?: string, category?: string): Game[] {
     return categoryMatch && text.includes(q);
   });
 }
+
 
