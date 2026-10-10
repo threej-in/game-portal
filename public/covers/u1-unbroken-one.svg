@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">U1 - The Unbroken One</title>
+  <desc id="desc">Fantasy roguelite dungeon cover art.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#090b16"/>
+      <stop offset=".5" stop-color="#1f1834"/>
+      <stop offset="1" stop-color="#071b16"/>
+    </linearGradient>
+    <radialGradient id="aura" cx="50%" cy="34%" r="58%">
+      <stop offset="0" stop-color="#a78bfa" stop-opacity=".62"/>
+      <stop offset=".55" stop-color="#14b8a6" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="blade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset=".45" stop-color="#93c5fd"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#000" flood-opacity=".55"/>
+    </filter>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <rect width="800" height="1000" fill="url(#aura)"/>
+  <g opacity=".18" fill="#e0e7ff">
+    <circle cx="91" cy="144" r="4"/>
+    <circle cx="704" cy="126" r="5"/>
+    <circle cx="662" cy="332" r="3"/>
+    <circle cx="128" cy="796" r="5"/>
+    <circle cx="690" cy="828" r="4"/>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M400 186c88 0 160 74 160 166 0 93-72 168-160 168s-160-75-160-168c0-92 72-166 160-166Z" fill="#172033"/>
+    <path d="M310 348c24-104 156-116 180 0-10 66-42 116-90 151-48-35-80-85-90-151Z" fill="#d1d5db"/>
+    <path d="M337 338c15-72 111-80 126 0-7 45-28 78-63 102-35-24-56-57-63-102Z" fill="#f8fafc"/>
+    <path d="M318 353c30 58 134 58 164 0-12 94-40 155-82 183-42-28-70-89-82-183Z" fill="#334155"/>
+    <path d="M381 270h38v380h-38Z" fill="url(#blade)"/>
+    <path d="M400 196 432 270h-64Z" fill="#f8fafc"/>
+    <path d="M300 650h200v48H300Z" fill="#78350f"/>
+    <path d="M340 698h120v118H340Z" fill="#92400e"/>
+    <path d="M250 816h300v52H250Z" fill="#0f172a" stroke="#14b8a6" stroke-width="6"/>
+    <path d="M214 688c-42 22-70 58-84 106 62-12 108-34 138-66Z" fill="#14532d"/>
+    <path d="M586 688c42 22 70 58 84 106-62-12-108-34-138-66Z" fill="#14532d"/>
+  </g>
+  <text x="400" y="118" text-anchor="middle" fill="#f8fafc" font-family="Verdana, sans-serif" font-size="82" font-weight="900" letter-spacing="4">U1</text>
+  <text x="400" y="178" text-anchor="middle" fill="#99f6e4" font-family="Verdana, sans-serif" font-size="30" font-weight="800" letter-spacing="7">THE UNBROKEN ONE</text>
+  <text x="400" y="930" text-anchor="middle" fill="#cbd5e1" font-family="Verdana, sans-serif" font-size="25" font-weight="700">Fantasy extraction roguelite</text>
+</svg>

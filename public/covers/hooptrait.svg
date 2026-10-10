@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">HoopTrait cover</title>
+  <desc id="desc">A basketball player builder card with trait bars and a hoop.</desc>
+  <defs>
+    <linearGradient id="court" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a1308"/>
+      <stop offset=".54" stop-color="#b85c1d"/>
+      <stop offset="1" stop-color="#f0a63b"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101827"/>
+      <stop offset="1" stop-color="#223656"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#05070b" flood-opacity=".35"/>
+    </filter>
+  </defs>
+  <rect width="640" height="420" fill="url(#court)"/>
+  <path d="M0 326c78-24 131-35 214-28 89 8 141 44 230 43 76-1 128-26 196-58v137H0z" fill="#0d1524" opacity=".62"/>
+  <circle cx="514" cy="104" r="74" fill="none" stroke="#fff4da" stroke-width="12" opacity=".85"/>
+  <rect x="466" y="92" width="96" height="22" rx="11" fill="#ef5a24"/>
+  <path d="M482 114h64l-12 72h-40z" fill="none" stroke="#fff4da" stroke-width="8" opacity=".72"/>
+  <g filter="url(#shadow)">
+    <rect x="64" y="58" width="342" height="292" rx="28" fill="url(#panel)"/>
+    <circle cx="132" cy="132" r="46" fill="#f47b22"/>
+    <path d="M88 132h88M132 88v88M101 101c22 20 40 42 62 64M163 101c-22 20-40 42-62 64" stroke="#5d260c" stroke-width="6" stroke-linecap="round" opacity=".75"/>
+    <text x="196" y="118" fill="#fff4da" font-family="Verdana, Geneva, sans-serif" font-size="42" font-weight="800">Hoop</text>
+    <text x="196" y="160" fill="#ffcf65" font-family="Verdana, Geneva, sans-serif" font-size="42" font-weight="800">Trait</text>
+    <g font-family="Verdana, Geneva, sans-serif" font-weight="700" font-size="17" fill="#d7e4ff">
+      <text x="92" y="218">SHOOTING</text>
+      <text x="92" y="258">DEFENSE</text>
+      <text x="92" y="298">PLAYMAKING</text>
+    </g>
+    <g>
+      <rect x="220" y="202" width="142" height="18" rx="9" fill="#334865"/>
+      <rect x="220" y="202" width="108" height="18" rx="9" fill="#ffcf65"/>
+      <rect x="220" y="242" width="142" height="18" rx="9" fill="#334865"/>
+      <rect x="220" y="242" width="82" height="18" rx="9" fill="#ff6b35"/>
+      <rect x="220" y="282" width="142" height="18" rx="9" fill="#334865"/>
+      <rect x="220" y="282" width="124" height="18" rx="9" fill="#62d5ff"/>
+    </g>
+  </g>
+  <text x="320" y="392" text-anchor="middle" fill="#fff4da" font-family="Verdana, Geneva, sans-serif" font-size="24" font-weight="800">Daily basketball player builder</text>
+</svg>

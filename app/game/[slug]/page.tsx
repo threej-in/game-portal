@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: GameDetailsPageProps): Promis
     };
   }
 
-  const description = `${game.shortDescription} ${game.mobile ? "Mobile-friendly browser game." : "Best played on desktop."} Source available at ${game.sourceUrl}.`;
+  const description = `${game.shortDescription} ${game.mobile ? "Mobile-friendly browser game." : "Best played on desktop."} Original project page: ${game.sourceUrl}.`;
 
   return {
     title: `${game.title} Game Guide`,
@@ -66,7 +66,7 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
   }
 
   const hasExternalSource = /^https?:\/\//i.test(game.sourceUrl);
-  const sourceLabel = hasExternalSource ? "Source Repo" : "Project Link";
+  const sourceLabel = hasExternalSource && /github\.com|gitlab\.com|codeberg\.org/i.test(game.sourceUrl) ? "Source Repo" : "Original Page";
   const relatedGames = getAllGames()
     .filter(
       (item) =>
@@ -112,6 +112,11 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
               {category}
             </span>
           ))}
+          {game.ageRating ? (
+            <span className="rounded-full border border-red-300/70 bg-red-950/90 px-3 py-1 text-xs font-semibold text-red-50">
+              {game.ageRating} Adults only
+            </span>
+          ) : null}
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
               game.mobile
@@ -124,6 +129,11 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
         </div>
         <h1 className="mt-4 text-3xl font-bold text-slate-100">{game.title}</h1>
         <p className="mt-3 max-w-3xl text-slate-300">{game.description}</p>
+        {game.ageRating ? (
+          <div className="mt-4 max-w-3xl rounded-2xl border border-red-500/40 bg-red-950/40 p-4 text-sm leading-6 text-red-100">
+            This listing links to an external adults-only casino-style entertainment site. Continue only if you are at least 18 and allowed to access this type of content in your location. Threej does not host the game, handle accounts, sell credits, or provide prizes.
+          </div>
+        ) : null}
         <p className="mt-3 max-w-3xl text-sm text-slate-400">
           {game.mobile
             ? "This game is expected to work well on smaller screens and touch devices."
@@ -138,7 +148,7 @@ export default async function GameDetailsPage({ params }: GameDetailsPageProps) 
         </div>
         <div className="mt-6 flex items-center gap-2">
           <Link href={`/play/${game.slug}`} className="btn btn-primary">
-            Play now
+            {game.ageRating ? "Open 18+ external site" : "Play now"}
           </Link>
           <a href={game.sourceUrl} className="btn btn-secondary" target="_blank" rel="noreferrer">
             {sourceLabel}

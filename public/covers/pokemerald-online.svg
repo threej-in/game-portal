@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">PokEmerald Online</title>
+  <desc id="desc">Fan MMO cover with emerald region and trainer adventure theme.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#052e2b"/>
+      <stop offset=".48" stop-color="#065f46"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="34%" r="60%">
+      <stop offset="0" stop-color="#6ee7b7" stop-opacity=".7"/>
+      <stop offset=".52" stop-color="#22c55e" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#000" flood-opacity=".5"/>
+    </filter>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <rect width="800" height="1000" fill="url(#glow)"/>
+  <path d="M0 698 126 586l96 74 150-156 126 116 90-76 212 156v300H0Z" fill="#064e3b"/>
+  <path d="M0 788 148 658l102 74 142-124 142 120 108-78 158 116v234H0Z" fill="#047857"/>
+  <g opacity=".22" fill="#ecfdf5">
+    <circle cx="96" cy="126" r="5"/>
+    <circle cx="706" cy="158" r="5"/>
+    <circle cx="662" cy="292" r="4"/>
+    <circle cx="128" cy="812" r="5"/>
+    <circle cx="676" cy="790" r="4"/>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M400 214 530 432 400 650 270 432Z" fill="#10b981" stroke="#a7f3d0" stroke-width="12"/>
+    <path d="M400 278 484 432 400 586 316 432Z" fill="#34d399" opacity=".78"/>
+    <path d="M282 646c44-78 192-78 236 0l-28 186H310Z" fill="#111827"/>
+    <path d="M330 638c18-34 122-34 140 0l-20 96H350Z" fill="#f8fafc"/>
+    <circle cx="400" cy="408" r="58" fill="#ecfdf5"/>
+    <circle cx="400" cy="408" r="32" fill="#064e3b"/>
+    <path d="M252 720h296" stroke="#a7f3d0" stroke-width="16" stroke-linecap="round"/>
+    <path d="M292 776h216" stroke="#34d399" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <text x="400" y="116" text-anchor="middle" fill="#ecfdf5" font-family="Verdana, sans-serif" font-size="54" font-weight="900" letter-spacing="2">POKEMERALD</text>
+  <text x="400" y="178" text-anchor="middle" fill="#a7f3d0" font-family="Verdana, sans-serif" font-size="32" font-weight="800" letter-spacing="8">ONLINE</text>
+  <text x="400" y="916" text-anchor="middle" fill="#cbd5e1" font-family="Verdana, sans-serif" font-size="24" font-weight="700">Unofficial fan MMO listing</text>
+</svg>

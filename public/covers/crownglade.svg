@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Crownglade</title>
+  <desc id="desc">A 3D kingdom-building strategy game cover.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#102a43"/>
+      <stop offset=".52" stop-color="#174e4f"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset=".55" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#92400e"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="22" stdDeviation="22" flood-color="#000" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect width="800" height="1000" fill="url(#sky)"/>
+  <circle cx="650" cy="150" r="95" fill="#fef3c7" opacity=".82"/>
+  <path d="M0 704 150 588l104 72 146-166 158 132 104-80 138 122v332H0Z" fill="#14532d"/>
+  <path d="M0 780 168 650l92 60 140-150 154 122 114-80 132 112v286H0Z" fill="#166534"/>
+  <g filter="url(#shadow)">
+    <path d="M166 620h468v210H166Z" fill="#475569"/>
+    <path d="M132 620h536v74H132Z" fill="#64748b"/>
+    <path d="M196 534h86v86h-86Z" fill="#64748b"/>
+    <path d="M518 534h86v86h-86Z" fill="#64748b"/>
+    <path d="M318 468h164v152H318Z" fill="#64748b"/>
+    <path d="M318 468 400 386l82 82Z" fill="url(#gold)"/>
+    <path d="M196 534 239 480l43 54Z" fill="url(#gold)"/>
+    <path d="M518 534 561 480l43 54Z" fill="url(#gold)"/>
+    <path d="M367 830V708c0-32 66-32 66 0v122Z" fill="#1e293b"/>
+    <path d="M218 678h54v58h-54Zm155 0h54v58h-54Zm155 0h54v58h-54Z" fill="#fef3c7"/>
+    <path d="M92 842h616v66H92Z" fill="#713f12"/>
+    <path d="M110 842h580" stroke="#fbbf24" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(286 212)" filter="url(#shadow)">
+    <path d="M114 0 148 72l80 10-58 56 14 80-70-38-70 38 14-80L0 82l80-10Z" fill="url(#gold)"/>
+  </g>
+  <text x="400" y="122" text-anchor="middle" fill="#f8fafc" font-family="Verdana, sans-serif" font-size="58" font-weight="900" letter-spacing="3">CROWNGLADE</text>
+  <text x="400" y="188" text-anchor="middle" fill="#fde68a" font-family="Verdana, sans-serif" font-size="28" font-weight="800" letter-spacing="8">KINGDOMS</text>
+  <text x="400" y="948" text-anchor="middle" fill="#cbd5e1" font-family="Verdana, sans-serif" font-size="25" font-weight="700">3D strategy battles</text>
+</svg>

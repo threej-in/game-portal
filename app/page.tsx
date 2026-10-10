@@ -31,7 +31,11 @@ export default async function Home() {
               key={game.slug}
               className="group relative aspect-[4/5] overflow-hidden rounded-lg border border-slate-800 bg-slate-900 shadow-lg shadow-black/30 transition duration-200 hover:shadow-2xl hover:shadow-black/50"
             >
-              <Link href={`/play/${game.slug}`} className="absolute inset-0 z-10" aria-label={`Play ${game.title}`} />
+              <Link
+                href={game.ageRating ? `/game/${game.slug}` : `/play/${game.slug}`}
+                className="absolute inset-0 z-10"
+                aria-label={game.ageRating ? `View age warning for ${game.title}` : `Play ${game.title}`}
+              />
               <Image
                 src={game.coverImage}
                 alt={game.title}
@@ -50,6 +54,11 @@ export default async function Home() {
                   {game.slug === mostPlayedSlug ? (
                     <span className="rounded-full border border-fuchsia-300/70 bg-fuchsia-950/90 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-fuchsia-50 backdrop-blur">
                       Most Played
+                    </span>
+                  ) : null}
+                  {game.ageRating ? (
+                    <span className="rounded-full border border-red-300/70 bg-red-950/90 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-red-50 backdrop-blur">
+                      {game.ageRating}
                     </span>
                   ) : null}
                   <span
