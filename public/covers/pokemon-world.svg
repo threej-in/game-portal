@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Pokémon World</title>
+  <desc id="desc">A bright fantasy landscape with paths crossing eight regions around a globe.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#56b8e8"/>
+      <stop offset=".62" stop-color="#bce8f0"/>
+      <stop offset="1" stop-color="#f4df9c"/>
+    </linearGradient>
+    <linearGradient id="land" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#48a862"/>
+      <stop offset="1" stop-color="#176a50"/>
+    </linearGradient>
+    <radialGradient id="orb">
+      <stop offset="0" stop-color="#d9fbff"/>
+      <stop offset=".72" stop-color="#59d3ef"/>
+      <stop offset="1" stop-color="#176a9d"/>
+    </radialGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#sky)"/>
+  <circle cx="1030" cy="105" r="72" fill="#fff5a8"/>
+  <g fill="#fff" opacity=".65"><ellipse cx="220" cy="105" rx="145" ry="35"/><ellipse cx="335" cy="88" rx="88" ry="25"/></g>
+  <path d="M0 470c145-150 270-159 406-34 142-189 293-195 438-43 118-106 237-97 356 31v251H0z" fill="url(#land)"/>
+  <path d="M0 538c242-60 333 46 520 25 182-20 260-104 440-74 87 14 166 50 240 104v82H0z" fill="#2a8db1"/>
+  <path d="M354 675c63-84 123-155 183-214 72-72 151-119 237-143" fill="none" stroke="#efd28f" stroke-width="55" stroke-linecap="round"/>
+  <path d="M354 675c63-84 123-155 183-214 72-72 151-119 237-143" fill="none" stroke="#fff0c2" stroke-width="8" stroke-dasharray="24 22"/>
+  <g transform="translate(835 192)" filter="url(#glow)">
+    <circle r="128" fill="url(#orb)" stroke="#e6fbff" stroke-width="9"/>
+    <path d="M-113-12c42-24 73-29 108-4 30 22 58 16 104-4M-103 43c43-14 76-7 111 13 30 18 57 16 95-2" fill="none" stroke="#fff" stroke-width="7" opacity=".7"/>
+    <path d="M0-123c-28 42-42 83-42 123S-28 82 0 123M0-123c28 42 42 83 42 123S28 82 0 123" fill="none" stroke="#fff" stroke-width="5" opacity=".52"/>
+  </g>
+  <g transform="translate(72 174)">
+    <text y="98" fill="#102c50" font-family="Georgia, serif" font-size="100" font-weight="700">Pokémon</text>
+    <text y="202" fill="#fff8dc" font-family="Georgia, serif" font-size="100" font-weight="700" stroke="#174772" stroke-width="3" paint-order="stroke">World</text>
+    <text y="258" fill="#123d5c" font-family="Verdana, sans-serif" font-size="24" letter-spacing="5">EXPLORE · BATTLE · TRADE</text>
+  </g>
+  <g fill="#f6e9ae" stroke="#183e58" stroke-width="5">
+    <path d="M170 510l28-55 28 55-28 55z"/><path d="M255 555l28-55 28 55-28 55z"/><path d="M965 495l28-55 28 55-28 55z"/>
+  </g>
+</svg>

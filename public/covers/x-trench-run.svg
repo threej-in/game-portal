@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">X Trench Run</title>
+  <desc id="desc">A space fighter flying through a glowing mechanical trench.</desc>
+  <defs>
+    <linearGradient id="space" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#020510"/>
+      <stop offset=".55" stop-color="#091b37"/>
+      <stop offset="1" stop-color="#150b29"/>
+    </linearGradient>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#182947"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="laser" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#3cf4ff" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#3cf4ff"/>
+      <stop offset="1" stop-color="#3cf4ff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#space)"/>
+  <g fill="#d5f7ff" opacity=".75">
+    <circle cx="97" cy="68" r="2"/><circle cx="248" cy="104" r="3"/><circle cx="404" cy="47" r="2"/><circle cx="561" cy="132" r="2"/><circle cx="738" cy="60" r="3"/><circle cx="1040" cy="88" r="2"/>
+  </g>
+  <path d="M0 0h1200v112L784 235H416L0 112z" fill="url(#wall)" stroke="#29476b" stroke-width="5"/>
+  <path d="M0 675h1200V563L784 440H416L0 563z" fill="url(#wall)" stroke="#29476b" stroke-width="5"/>
+  <g fill="none" stroke="#395778" stroke-width="5" opacity=".7">
+    <path d="M145 42l280 150M1055 42L775 192M145 633l280-150M1055 633L775 483"/>
+    <path d="M315 0l180 170M885 0L705 170M315 675l180-170M885 675L705 505"/>
+  </g>
+  <rect x="550" y="114" width="100" height="447" fill="url(#laser)" opacity=".24"/>
+  <g transform="translate(770 338)" filter="url(#glow)">
+    <path d="M-185 0l115-42 92-118 20 122 95 38-95 38-20 122L-70 42z" fill="#d9f6ff" stroke="#45dff7" stroke-width="8"/>
+    <path d="M-70-42L-20 0-70 42-126 0z" fill="#172d55"/>
+    <path d="M42-38l94-60-35 87M42 38l94 60-35-87" fill="#729dff" stroke="#45dff7" stroke-width="6"/>
+    <path d="M-188 0h-102" stroke="#ff5dbe" stroke-width="12" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(66 190)">
+    <text y="92" fill="#f7fbff" font-family="Georgia, serif" font-size="105" font-weight="700">X Trench</text>
+    <text y="202" fill="#4beaff" font-family="Georgia, serif" font-size="105" font-weight="700">Run</text>
+    <text y="257" fill="#b7cbe1" font-family="Verdana, sans-serif" font-size="24" letter-spacing="6">DODGE · FIRE · SURVIVE</text>
+  </g>
+</svg>

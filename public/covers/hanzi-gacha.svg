@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Hanzi Gacha cover</title>
+  <desc id="desc">A red and gold gacha capsule surrounded by collectible Chinese character cards.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16111f"/>
+      <stop offset="0.55" stop-color="#4b1730"/>
+      <stop offset="1" stop-color="#a62d2a"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff1a8"/>
+      <stop offset="0.5" stop-color="#f5bd3d"/>
+      <stop offset="1" stop-color="#b86a17"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#09040d" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <circle cx="1030" cy="80" r="260" fill="#f3b632" opacity="0.08"/>
+  <circle cx="150" cy="640" r="300" fill="#ffdd65" opacity="0.06"/>
+  <g fill="none" stroke="#f5c455" stroke-width="2" opacity="0.22">
+    <path d="M0 112h1200M0 563h1200"/>
+    <path d="M112 0v675M1088 0v675"/>
+  </g>
+  <g transform="translate(70 102)" filter="url(#shadow)">
+    <rect width="178" height="218" rx="24" fill="#fff8df" stroke="#f4c65a" stroke-width="7"/>
+    <text x="89" y="143" text-anchor="middle" font-family="serif" font-size="106" font-weight="700" fill="#a6222b">福</text>
+  </g>
+  <g transform="translate(952 355) rotate(7 89 109)" filter="url(#shadow)">
+    <rect width="178" height="218" rx="24" fill="#fff8df" stroke="#f4c65a" stroke-width="7"/>
+    <text x="89" y="143" text-anchor="middle" font-family="serif" font-size="106" font-weight="700" fill="#a6222b">龙</text>
+  </g>
+  <g transform="translate(850 68) rotate(6 70 86)" opacity="0.82">
+    <rect width="140" height="172" rx="20" fill="#3e1933" stroke="#eab94e" stroke-width="5"/>
+    <text x="70" y="113" text-anchor="middle" font-family="serif" font-size="82" fill="#ffe38a">运</text>
+  </g>
+  <g transform="translate(166 410) rotate(-7 70 86)" opacity="0.82">
+    <rect width="140" height="172" rx="20" fill="#3e1933" stroke="#eab94e" stroke-width="5"/>
+    <text x="70" y="113" text-anchor="middle" font-family="serif" font-size="82" fill="#ffe38a">字</text>
+  </g>
+  <g transform="translate(450 118)" filter="url(#shadow)">
+    <ellipse cx="150" cy="180" rx="158" ry="165" fill="#0d0a12" opacity="0.45"/>
+    <path d="M22 180a128 128 0 0 1 256 0z" fill="#d72c38" stroke="#ffd269" stroke-width="10"/>
+    <path d="M22 180a128 128 0 0 0 256 0z" fill="#fff4d2" stroke="#ffd269" stroke-width="10"/>
+    <rect x="8" y="164" width="284" height="34" rx="17" fill="url(#gold)"/>
+    <circle cx="150" cy="181" r="44" fill="#f8d25e" stroke="#fff2b2" stroke-width="8"/>
+    <circle cx="150" cy="181" r="17" fill="#8e1f2b"/>
+  </g>
+  <text x="600" y="518" text-anchor="middle" font-family="serif" font-size="76" font-weight="800" fill="#fff4d2">汉字扭蛋</text>
+  <text x="600" y="573" text-anchor="middle" font-family="sans-serif" font-size="30" letter-spacing="8" fill="#f7c95f">HANZI GACHA</text>
+  <text x="600" y="623" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#f4dfb7">DRAW · COLLECT · CHASE THE STREAK</text>
+</svg>

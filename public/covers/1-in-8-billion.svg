@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">1 in 8 Billion</title>
+  <desc id="desc">A branching life path crossing a globe of many individual points.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#09162f"/>
+      <stop offset="0.55" stop-color="#123b52"/>
+      <stop offset="1" stop-color="#d47948"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#ffd178" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#ffd178" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="people" width="31" height="31" patternUnits="userSpaceOnUse">
+      <circle cx="8" cy="8" r="3" fill="#d7ecdf" opacity=".72"/>
+      <circle cx="23" cy="23" r="2.5" fill="#a9d6c5" opacity=".48"/>
+    </pattern>
+    <clipPath id="globe"><circle cx="875" cy="336" r="238"/></clipPath>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <circle cx="875" cy="336" r="310" fill="url(#glow)" opacity=".28"/>
+  <circle cx="875" cy="336" r="238" fill="#103a4a" stroke="#f2d8a5" stroke-width="4"/>
+  <g clip-path="url(#globe)">
+    <rect x="630" y="90" width="490" height="490" fill="url(#people)"/>
+    <path d="M596 319c85-77 125-115 219-105 62 7 82 48 141 43 66-6 103-49 176-27M619 423c80-30 129-28 193 5 74 38 139 42 286-12" fill="none" stroke="#62a99b" stroke-width="16" opacity=".35"/>
+    <path d="M875 84c-44 79-66 163-66 252 0 91 22 171 66 242M875 84c44 79 66 163 66 252 0 91-22 171-66 242" fill="none" stroke="#e6f1db" stroke-width="3" opacity=".28"/>
+  </g>
+  <path d="M191 515c112-63 137-161 213-161 87 0 76 123 176 123 76 0 96-72 151-109" fill="none" stroke="#ffd178" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="191" cy="515" r="15" fill="#ffd178"/>
+  <circle cx="404" cy="354" r="15" fill="#ffd178"/>
+  <circle cx="580" cy="477" r="15" fill="#ffd178"/>
+  <circle cx="731" cy="368" r="23" fill="#fff4d6" stroke="#e98a54" stroke-width="9"/>
+  <text x="72" y="164" fill="#fff7df" font-family="Georgia, serif" font-size="116" font-weight="700">1 in 8</text>
+  <text x="72" y="270" fill="#ffd178" font-family="Georgia, serif" font-size="116" font-weight="700">Billion</text>
+  <text x="78" y="318" fill="#d7ecdf" font-family="Verdana, sans-serif" font-size="25" letter-spacing="7">EVERY LIFE TAKES A PATH</text>
+</svg>

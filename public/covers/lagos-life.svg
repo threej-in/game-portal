@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Lagos Life</title>
+  <desc id="desc">A colorful Lagos-inspired waterfront city with people, homes, and traffic.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#65c8f1"/>
+      <stop offset="1" stop-color="#f6d583"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#126b91"/>
+      <stop offset=".5" stop-color="#39a8c4"/>
+      <stop offset="1" stop-color="#126b91"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#sky)"/>
+  <circle cx="1040" cy="110" r="72" fill="#fff4b8" opacity=".9"/>
+  <g fill="#fff" opacity=".6">
+    <ellipse cx="230" cy="105" rx="120" ry="30"/><ellipse cx="315" cy="88" rx="73" ry="22"/>
+  </g>
+  <path d="M0 397h1200v278H0z" fill="url(#water)"/>
+  <path d="M0 425c155-31 265 32 410 0s262 30 405 0 260 25 385 1" fill="none" stroke="#9ce4e8" stroke-width="9" opacity=".7"/>
+  <g transform="translate(500 105)">
+    <rect x="0" y="105" width="92" height="194" fill="#e46545"/><rect x="103" y="35" width="116" height="264" fill="#234f75"/>
+    <rect x="232" y="80" width="82" height="219" fill="#f1a93d"/><rect x="327" y="0" width="105" height="299" fill="#376e76"/>
+    <rect x="445" y="125" width="124" height="174" fill="#cf5750"/>
+    <g fill="#dff5e9" opacity=".9">
+      <path d="M19 133h20v20H19zm35 0h20v20H54zm-35 39h20v20H19zm35 0h20v20H54zm-35 39h20v20H19zm35 0h20v20H54z"/>
+      <path d="M125 68h27v22h-27zm44 0h27v22h-27zm-44 42h27v22h-27zm44 0h27v22h-27zm-44 42h27v22h-27zm44 0h27v22h-27z"/>
+      <path d="M250 110h18v24h-18zm30 0h18v24h-18zm-30 43h18v24h-18zm30 0h18v24h-18z"/>
+      <path d="M347 35h28v23h-28zm39 0h28v23h-28zm-39 43h28v23h-28zm39 0h28v23h-28zm-39 43h28v23h-28zm39 0h28v23h-28z"/>
+      <path d="M468 153h31v22h-31zm44 0h31v22h-31zm-44 41h31v22h-31zm44 0h31v22h-31z"/>
+    </g>
+  </g>
+  <path d="M0 378h1200v38H0z" fill="#1e2731"/>
+  <path d="M0 397h1200" stroke="#f5d04a" stroke-width="5" stroke-dasharray="48 30"/>
+  <g transform="translate(760 340)">
+    <rect width="170" height="58" rx="16" fill="#f4cc2f"/><rect x="22" y="13" width="92" height="24" rx="5" fill="#bde7ee"/>
+    <circle cx="36" cy="57" r="16" fill="#17202c"/><circle cx="135" cy="57" r="16" fill="#17202c"/>
+  </g>
+  <g transform="translate(72 158)">
+    <text y="105" fill="#102d43" font-family="Georgia, serif" font-size="108" font-weight="700">Lagos</text>
+    <text y="213" fill="#fffaf0" font-family="Georgia, serif" font-size="108" font-weight="700">Life</text>
+    <text y="266" fill="#153e55" font-family="Verdana, sans-serif" font-size="24" letter-spacing="5">LIVE YOUR CITY STORY</text>
+  </g>
+  <g transform="translate(130 500)">
+    <circle cx="0" cy="0" r="27" fill="#5d3526"/><path d="M-34 96c0-48 12-70 34-70s34 22 34 70" fill="#ef7252"/>
+    <circle cx="105" cy="0" r="27" fill="#7b4b30"/><path d="M71 96c0-48 12-70 34-70s34 22 34 70" fill="#f2c846"/>
+    <circle cx="210" cy="0" r="27" fill="#3d261d"/><path d="M176 96c0-48 12-70 34-70s34 22 34 70" fill="#46a789"/>
+  </g>
+</svg>

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Lights Out</title>
+  <desc id="desc">A glowing five by five lights puzzle board.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#050912"/>
+      <stop offset=".55" stop-color="#10213b"/>
+      <stop offset="1" stop-color="#061019"/>
+    </linearGradient>
+    <radialGradient id="lit">
+      <stop offset="0" stop-color="#fffbd1"/>
+      <stop offset=".42" stop-color="#aefaff"/>
+      <stop offset="1" stop-color="#26c7e8"/>
+    </radialGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <circle cx="945" cy="135" r="210" fill="#1e7c98" opacity=".13"/>
+  <circle cx="780" cy="598" r="300" fill="#294d99" opacity=".12"/>
+  <g transform="translate(690 82)">
+    <rect width="440" height="440" rx="42" fill="#050a12" stroke="#315371" stroke-width="8"/>
+    <g fill="#142437" stroke="#263f58" stroke-width="3">
+      <circle cx="52" cy="52" r="31"/><circle cx="136" cy="52" r="31"/><circle cx="220" cy="52" r="31"/><circle cx="304" cy="52" r="31"/><circle cx="388" cy="52" r="31"/>
+      <circle cx="52" cy="136" r="31"/><circle cx="136" cy="136" r="31"/><circle cx="220" cy="136" r="31"/><circle cx="304" cy="136" r="31"/><circle cx="388" cy="136" r="31"/>
+      <circle cx="52" cy="220" r="31"/><circle cx="136" cy="220" r="31"/><circle cx="220" cy="220" r="31"/><circle cx="304" cy="220" r="31"/><circle cx="388" cy="220" r="31"/>
+      <circle cx="52" cy="304" r="31"/><circle cx="136" cy="304" r="31"/><circle cx="220" cy="304" r="31"/><circle cx="304" cy="304" r="31"/><circle cx="388" cy="304" r="31"/>
+      <circle cx="52" cy="388" r="31"/><circle cx="136" cy="388" r="31"/><circle cx="220" cy="388" r="31"/><circle cx="304" cy="388" r="31"/><circle cx="388" cy="388" r="31"/>
+    </g>
+    <g fill="url(#lit)" filter="url(#glow)">
+      <circle cx="220" cy="136" r="27"/>
+      <circle cx="136" cy="220" r="27"/>
+      <circle cx="220" cy="220" r="27"/>
+      <circle cx="304" cy="220" r="27"/>
+      <circle cx="220" cy="304" r="27"/>
+    </g>
+  </g>
+  <text x="72" y="238" fill="#f3f8ff" font-family="Georgia, serif" font-size="116" font-weight="700">Lights</text>
+  <text x="72" y="352" fill="#70e9ff" font-family="Georgia, serif" font-size="116" font-weight="700">Out</text>
+  <text x="80" y="412" fill="#a8bed2" font-family="Verdana, sans-serif" font-size="25" letter-spacing="6">SWITCH OFF THE GRID</text>
+</svg>

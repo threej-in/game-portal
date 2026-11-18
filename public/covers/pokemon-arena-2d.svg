@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Pokemon Arena 2D cover</title>
+  <desc id="desc">An original abstract pixel arena with two opposing energy orbs.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#152750"/>
+      <stop offset="1" stop-color="#090e25"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#257b55"/>
+      <stop offset="1" stop-color="#103a35"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#sky)"/>
+  <circle cx="200" cy="105" r="145" fill="#3188ff" opacity=".18" filter="url(#glow)"/>
+  <circle cx="1000" cy="105" r="145" fill="#ff4c4c" opacity=".18" filter="url(#glow)"/>
+  <path d="M0 305 600 205l600 100v370H0Z" fill="url(#field)"/>
+  <path d="M0 350 600 250l600 100M600 250v425" fill="none" stroke="#a6e8a5" stroke-width="8" opacity=".38"/>
+  <ellipse cx="600" cy="500" rx="430" ry="115" fill="none" stroke="#e8f6d3" stroke-width="13" opacity=".6"/>
+  <g transform="translate(275 420)">
+    <circle r="88" fill="#1d4e9c" opacity=".7" filter="url(#glow)"/>
+    <circle r="58" fill="#4ca7ff" stroke="#d6f1ff" stroke-width="10"/>
+    <path d="M-20-18 35 0-20 18Z" fill="#fff"/>
+  </g>
+  <g transform="translate(925 420) scale(-1 1)">
+    <circle r="88" fill="#a51f32" opacity=".7" filter="url(#glow)"/>
+    <circle r="58" fill="#ff5a55" stroke="#ffe4ca" stroke-width="10"/>
+    <path d="M-20-18 35 0-20 18Z" fill="#fff"/>
+  </g>
+  <rect x="132" y="56" width="936" height="178" rx="32" fill="#080d21" opacity=".84" stroke="#5276be" stroke-width="4"/>
+  <text x="600" y="132" fill="#ffda4b" font-family="Trebuchet MS, sans-serif" font-size="68" font-weight="900" text-anchor="middle" letter-spacing="4">POKEMON ARENA 2D</text>
+  <text x="600" y="190" fill="#dfeaff" font-family="Trebuchet MS, sans-serif" font-size="27" font-weight="700" text-anchor="middle" letter-spacing="7">REAL-TIME BROWSER BATTLES</text>
+  <text x="600" y="635" fill="#d8f2e1" font-family="Trebuchet MS, sans-serif" font-size="25" font-weight="700" text-anchor="middle">BUILD A TRIO  •  AIM  •  DODGE  •  BATTLE ONLINE</text>
+</svg>

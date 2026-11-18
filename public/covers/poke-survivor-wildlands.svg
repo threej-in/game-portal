@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Poke Survivor Wildlands Edition cover</title>
+  <desc id="desc">An original pixel-art wilderness scene with a lone explorer facing a ring of glowing creatures.</desc>
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#17263f"/>
+      <stop offset="1" stop-color="#071311"/>
+    </linearGradient>
+    <radialGradient id="clearing">
+      <stop stop-color="#67b867" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#173e2b" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="15"/></filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#night)"/>
+  <circle cx="600" cy="440" r="360" fill="url(#clearing)"/>
+  <path d="M0 350 85 185l65 165 92-225 89 225 88-185 74 185 100-252 94 252 73-178 72 178 97-225 86 225 78-165 77 165v325H0Z" fill="#0b241c"/>
+  <path d="M0 475Q195 408 355 476t310-7q175-70 535 14v192H0Z" fill="#183e2c"/>
+  <g opacity=".55" filter="url(#glow)">
+    <circle cx="236" cy="453" r="45" fill="#ff9e3d"/><circle cx="960" cy="451" r="45" fill="#49bfff"/>
+    <circle cx="378" cy="530" r="42" fill="#e56fff"/><circle cx="822" cy="530" r="42" fill="#ffe45f"/>
+  </g>
+  <g fill="#081510" stroke-width="9">
+    <path d="M183 489q53-86 106 0l-13 66h-80Z" stroke="#ffb34f"/>
+    <path d="M907 489q53-86 106 0l-13 66h-80Z" stroke="#65cdfc"/>
+    <path d="M326 563q52-84 104 0l-13 58h-78Z" stroke="#ed82ff"/>
+    <path d="M770 563q52-84 104 0l-13 58h-78Z" stroke="#ffe879"/>
+  </g>
+  <g transform="translate(600 474)">
+    <circle cy="-48" r="34" fill="#d6f1c2"/>
+    <path d="M-55 80q4-115 55-115T55 80Z" fill="#4aa36e" stroke="#bde69d" stroke-width="9"/>
+    <path d="m-24-66 24-44 24 44" fill="#4aa36e" stroke="#bde69d" stroke-width="9"/>
+  </g>
+  <rect x="100" y="50" width="1000" height="186" rx="32" fill="#06100f" opacity=".87" stroke="#4f9364" stroke-width="4"/>
+  <text x="600" y="126" fill="#ecffbd" font-family="Trebuchet MS, sans-serif" font-size="72" font-weight="900" text-anchor="middle" letter-spacing="3">POKE SURVIVOR</text>
+  <text x="600" y="188" fill="#78e5a2" font-family="Trebuchet MS, sans-serif" font-size="29" font-weight="800" text-anchor="middle" letter-spacing="9">WILDLANDS EDITION</text>
+  <text x="600" y="646" fill="#d8f5dc" font-family="Trebuchet MS, sans-serif" font-size="24" font-weight="700" text-anchor="middle">MOVE • BUILD • EVOLVE • SURVIVE</text>
+</svg>

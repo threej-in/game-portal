@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Noillirk</title>
+  <desc id="desc">A small spaceship rising from a forest through clouds toward a rainbow.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="1" x2="0" y2="0">
+      <stop stop-color="#081525"/>
+      <stop offset=".48" stop-color="#155b86"/>
+      <stop offset="1" stop-color="#7bdcf0"/>
+    </linearGradient>
+    <linearGradient id="trail" x1="0" y1="1" x2="0" y2="0">
+      <stop stop-color="#ff5d8f" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#ffd166"/>
+      <stop offset="1" stop-color="#fff"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="13" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#sky)"/>
+  <g fill="#fff" opacity=".68">
+    <ellipse cx="910" cy="220" rx="155" ry="42"/><ellipse cx="1040" cy="202" rx="102" ry="32"/>
+    <ellipse cx="680" cy="350" rx="120" ry="34"/><ellipse cx="770" cy="335" rx="78" ry="26"/>
+  </g>
+  <path d="M760 194c88-154 300-178 417-35" fill="none" stroke="#ff5d67" stroke-width="19"/>
+  <path d="M774 204c80-132 271-153 377-29" fill="none" stroke="#ffad45" stroke-width="19"/>
+  <path d="M791 216c72-108 238-124 333-17" fill="none" stroke="#ffe05e" stroke-width="19"/>
+  <path d="M811 229c63-82 201-94 285-8" fill="none" stroke="#61db83" stroke-width="19"/>
+  <path d="M834 243c52-57 160-62 230 7" fill="none" stroke="#5eb7ff" stroke-width="19"/>
+  <path d="M857 258c42-34 119-35 176 15" fill="none" stroke="#a985ff" stroke-width="19"/>
+  <path d="M0 565c150-108 301-89 449 3 150-126 307-115 454-9 104-96 203-79 297 0v116H0z" fill="#092d2a"/>
+  <g fill="#0c4c3a">
+    <path d="M80 590l55-135 55 135zM170 610l70-180 70 180zM290 590l52-130 52 130zM405 615l74-193 74 193zM950 610l70-178 70 178zM1070 600l55-145 55 145z"/>
+  </g>
+  <g transform="translate(760 385) rotate(18)" filter="url(#glow)">
+    <path d="M0-82c42 31 55 79 38 133L0 83l-38-32C-55-3-42-51 0-82z" fill="#f0f7ff" stroke="#4de3ff" stroke-width="7"/>
+    <circle cy="-15" r="20" fill="#183b6d" stroke="#8feeff" stroke-width="5"/>
+    <path d="M-36 38l-45 32 52 5M36 38l45 32-52 5" fill="#ff5d8f" stroke="#ffd166" stroke-width="5"/>
+    <path d="M-14 78L0 156l14-78z" fill="url(#trail)"/>
+  </g>
+  <g transform="translate(66 162)">
+    <text y="106" fill="#f5fbff" font-family="Georgia, serif" font-size="120" font-weight="700">Noillirk</text>
+    <text y="167" fill="#ffd166" font-family="Verdana, sans-serif" font-size="25" letter-spacing="6">COMMON ANSWERS FLY HIGHER</text>
+    <text y="254" fill="#d4e9f4" font-family="Verdana, sans-serif" font-size="31">Seven questions. One daily flight.</text>
+  </g>
+</svg>
